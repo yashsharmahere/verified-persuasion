@@ -26,6 +26,19 @@ interface Case {
   expected: 'supported' | 'unsupported';
   /** Why this case exists — printed on failure. */
   tests: string;
+  /**
+   * Has a human opened the source and confirmed this quote is verbatim?
+   *
+   * This field exists because the fixtures once failed it. On 2026-10-04 two
+   * ESPEN "quotes" here were paraphrases, and one of them had silently widened
+   * the source's population from "older people who are malnourished or at risk
+   * of malnutrition because they have acute or chronic illness" to "older adults
+   * who have acute or chronic illnesses" — the same drift the gate exists to
+   * catch, committed in the gate's own test data.
+   *
+   * A harness that grades a judge against invented quotes grades nothing.
+   */
+  source_checked: boolean;
 }
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -41,6 +54,27 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const casesPath = new URL('../data/gate-cases.json', import.meta.url);
 const cases: Case[] = JSON.parse(readFileSync(casesPath, 'utf8'));
+
+const unchecked = cases.filter((c) => !c.source_checked);
+if (unchecked.length) {
+  console.log(
+    `\nNote: ${unchecked.length} case(s) carry a quote nobody has confirmed against\n` +
+      `the source: ${unchecked.map((c) => c.id).join(', ')}.\n` +
+      `Their verdicts grade the judge against text that may not exist as written.\n`,
+  );
+}
+
+// A judge that rejects everything would pass a harness made only of
+// unsupported cases. Refuse to run one.
+const supportedCases = cases.filter((c) => c.expected === 'supported').length;
+if (supportedCases < 2) {
+  console.error(
+    `Only ${supportedCases} case(s) expect "supported". A judge that rejects\n` +
+      `every claim would score well on this harness and be useless in practice.\n` +
+      `Add cases a correct judge must accept.`,
+  );
+  process.exit(1);
+}
 
 async function main() {
   let passed = 0;

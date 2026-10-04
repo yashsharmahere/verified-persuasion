@@ -2,45 +2,49 @@
   {
     "id": "exact-restatement",
     "tests": "A claim that restates its passage must pass. If this fails, the judge is too strict and the system will have nothing to say.",
-    "claim": "Healthy older adults are advised to consume at least 1.0 to 1.2 g of protein per kilogram of body weight per day.",
+    "claim": "Healthy older people should get at least 1.0 to 1.2 g of protein per kilogram of body weight per day.",
     "passage": {
       "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
       "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
-      "quote": "For healthy older adults, we recommend a diet that includes at least 1.0 to 1.2 g protein/kg body weight/day."
+      "quote": "for healthy older people, the diet should provide at least 1.0–1.2 g protein/kg body weight/day"
     },
+    "source_checked": true,
     "expected": "supported"
   },
   {
+    "id": "faithful-paraphrase",
+    "tests": "A real paraphrase that stays inside what the passage says. Must pass, or the system can only ever quote verbatim. Needed alongside exact-restatement so a judge that rejects everything cannot pass this harness.",
+    "claim": "ESPEN advises a minimum daily protein intake of 1.0 to 1.2 grams per kilogram of body weight for older people who are healthy.",
+    "passage": {
+      "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
+      "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
+      "quote": "for healthy older people, the diet should provide at least 1.0–1.2 g protein/kg body weight/day"
+    },
+    "source_checked": true,
+    "expected": "supported"
+  },
+  {
+    "id": "dropped-qualifier",
+    "tests": "NEAR-MISS, and a real one: this is the exact error found in this project's own fixtures on 2026-10-04. The source's population is older people who are MALNOURISHED OR AT RISK OF MALNUTRITION BECAUSE OF illness. The claim silently widens that to anyone with an illness. A judge that passes this would have passed the mistake that produced this case.",
+    "claim": "Older people with an acute or chronic illness should consume 1.2 to 1.5 g of protein per kilogram of body weight per day.",
+    "passage": {
+      "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
+      "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
+      "quote": "for older people who are malnourished or at risk of malnutrition because they have acute or chronic illness, the diet should provide 1.2–1.5 g protein/kg body weight/day"
+    },
+    "source_checked": true,
+    "expected": "unsupported"
+  },
+  {
     "id": "overstated-population",
-    "tests": "NEAR-MISS. A finding stated for healthy older adults, restated as universal. The passage is about the topic and does not establish the claim.",
+    "tests": "NEAR-MISS. A finding stated for healthy older people, restated as universal. The passage is about the topic and does not establish the claim.",
     "claim": "Everyone over 65 needs 1.2 g of protein per kilogram per day.",
     "passage": {
       "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
       "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
-      "quote": "For healthy older adults, we recommend a diet that includes at least 1.0 to 1.2 g protein/kg body weight/day."
+      "quote": "for healthy older people, the diet should provide at least 1.0–1.2 g protein/kg body weight/day"
     },
-    "expected": "unsupported"
-  },
-  {
-    "id": "correlation-to-causation",
-    "tests": "NEAR-MISS. An association in the passage, asserted as cause in the claim. This is the most common drift and the one a similarity check cannot catch.",
-    "claim": "Eating more protein prevents muscle loss in older adults.",
-    "passage": {
-      "source_name": "AusDiab 12-year prospective study",
-      "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8925096/",
-      "quote": "Higher protein intake was cross-sectionally associated with better physical functioning and muscle strength in older adults."
-    },
-    "expected": "unsupported"
-  },
-  {
-    "id": "invented-number",
-    "tests": "A number that appears nowhere in the passage. The claim is topically adjacent and numerically fabricated.",
-    "claim": "Muscle mass declines by 8% per decade after the age of 30.",
-    "passage": {
-      "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
-      "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
-      "quote": "For healthy older adults, we recommend a diet that includes at least 1.0 to 1.2 g protein/kg body weight/day."
-    },
+    "source_checked": true,
     "expected": "unsupported"
   },
   {
@@ -52,28 +56,43 @@
       "source_url": "https://acl.gov/sites/default/files/nutrition/Nutrition-Needs_Protein_FINAL-2.18.20_508.pdf",
       "quote": "The Recommended Dietary Allowance for older adults is the same as younger adults, though emerging research suggests older adults may indeed require more protein."
     },
+    "source_checked": true,
+    "expected": "unsupported"
+  },
+  {
+    "id": "invented-number",
+    "tests": "A number that appears nowhere in the passage. The claim is topically adjacent and numerically fabricated.",
+    "claim": "Muscle mass declines by 8% per decade after the age of 30.",
+    "passage": {
+      "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
+      "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
+      "quote": "for healthy older people, the diet should provide at least 1.0–1.2 g protein/kg body weight/day"
+    },
+    "source_checked": true,
     "expected": "unsupported"
   },
   {
     "id": "topically-near-unrelated",
     "tests": "The passage and claim share a subject and nothing else. Catches a judge that is really just scoring similarity.",
-    "claim": "Older adults should avoid carbohydrates in the evening.",
+    "claim": "Older people should avoid carbohydrates in the evening.",
     "passage": {
       "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
       "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
-      "quote": "For healthy older adults, we recommend a diet that includes at least 1.0 to 1.2 g protein/kg body weight/day."
+      "quote": "for healthy older people, the diet should provide at least 1.0–1.2 g protein/kg body weight/day"
     },
+    "source_checked": true,
     "expected": "unsupported"
   },
   {
-    "id": "faithful-paraphrase",
-    "tests": "A real paraphrase, not a restatement, that stays inside what the passage says. The comparison (ill > healthy) is only supported because both figures are in the passage. Must pass, or the system can only quote verbatim.",
-    "claim": "Older adults with an acute or chronic illness are advised to consume more protein than healthy older adults.",
+    "id": "correlation-to-causation",
+    "tests": "NEAR-MISS. An association in the passage, asserted as cause in the claim. This is the most common drift and the one a similarity check cannot catch.",
+    "claim": "Eating more protein prevents muscle loss in older adults.",
     "passage": {
-      "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
-      "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
-      "quote": "For healthy older adults, we recommend a diet that includes at least 1.0 to 1.2 g protein/kg body weight/day. For certain older adults who have acute or chronic illnesses, 1.2 to 1.5 g protein/kg body weight/day is recommended."
+      "source_name": "AusDiab 12-year prospective study",
+      "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8925096/",
+      "quote": "a protein intake higher than the recommended dietary allowance is cross-sectionally associated with better physical functioning and muscle strength in older adults"
     },
-    "expected": "supported"
+    "source_checked": false,
+    "expected": "unsupported"
   }
 ]

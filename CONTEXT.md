@@ -51,6 +51,30 @@ Its failures are graded, and the grading matters: a claim the judge
 participant, exit 1). A claim it *rejects* but shouldn't is minor (the
 system goes quiet, exit 0).
 
+### The fixtures failed their own standard once
+
+On 2026-10-04, two ESPEN "quotes" in `data/gate-cases.json` turned out to
+be paraphrases written from memory rather than text read at the source.
+One of them had drifted:
+
+| | Population |
+| --- | --- |
+| ESPEN actually says | older people who are **malnourished or at risk of malnutrition because** they have acute or chronic illness |
+| The fixture said | older adults who **have acute or chronic illnesses** |
+
+That is a silently widened population — the same error category the
+`overstated-population` case exists to catch, committed inside the gate's
+own test data. It is now a test case of its own (`dropped-qualifier`),
+and every case carries a `source_checked` flag. One case,
+`correlation-to-causation`, is still `false` and its quote needs checking
+against the AusDiab paper.
+
+The general lesson, which belongs in the case study: **a quote nobody
+opened is not a quote.** The same discipline applies to every row that
+later enters the `passages` table with `human_verified = true`, because
+the brochure and the conversation will show those to the participant as
+the source's own words.
+
 ### Not done, and blocked
 
 Retrieval, the conversation loop, and the brochure. All three need the
