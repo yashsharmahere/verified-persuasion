@@ -1,0 +1,25 @@
+{
+  "name": "verified-persuasion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A persuasion system that asserts only claims traceable to a named source.",
+  "scripts": {
+    "build": "tsc",
+    "gate:test": "tsx test/gate.test.ts",
+    "run:reversal": "tsx scripts/reversal-run.ts",
+    "run:conversation": "tsx scripts/conversation-run.ts",
+    "run:brochure": "tsx scripts/brochure-run.ts",
+    "metrics": "tsx scripts/metrics-run.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.7.0"
+  }
+}
