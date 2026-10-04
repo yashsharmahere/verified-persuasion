@@ -14,6 +14,7 @@
  *   ANTHROPIC_API_KEY=... npm run gate:judge
  */
 
+import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { verifyFragment } from '../src/gate/verify.js';
 import type { Passage } from '../src/types.js';
