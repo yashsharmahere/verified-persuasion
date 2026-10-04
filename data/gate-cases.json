@@ -86,13 +86,13 @@
   {
     "id": "correlation-to-causation",
     "tests": "NEAR-MISS. An association in the passage, asserted as cause in the claim. This is the most common drift and the one a similarity check cannot catch.",
-    "claim": "Eating more protein prevents muscle loss in older adults.",
+    "claim": "Higher protein intake from animal, red meat and processed animal sources causes health-related quality of life to deteriorate over 12 years.",
     "passage": {
-      "source_name": "AusDiab 12-year prospective study",
+      "source_name": "Matison et al., BMC Geriatrics 2022 (AusDiab 12-year prospective study)",
       "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8925096/",
-      "quote": "a protein intake higher than the recommended dietary allowance is cross-sectionally associated with better physical functioning and muscle strength in older adults"
+      "quote": "There was no relationship between total dietary protein intake and HRQoL, but higher protein intakes from animal, red meat and processed animal sources were associated with a deterioration in HRQoL scores over 12 years."
     },
-    "source_checked": false,
+    "source_checked": true,
     "expected": "unsupported"
   }
 ]
