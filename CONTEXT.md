@@ -112,9 +112,7 @@ Two problems with it, both known, neither resolved:
    `docs/02-design-paper.md` §10. They reduce it; they do not remove it.
    Whatever remains gets stated in the case study.
 
-The interview questions are drafted but live only in the chat transcript,
-not in this repo. Re-derive them from §8 Run 0 of the design paper if
-needed.
+The intake interview guide is `docs/03-intake-interview.md`.
 
 ---
 
