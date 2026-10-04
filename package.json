@@ -6,7 +6,8 @@
   "description": "A persuasion system that asserts only claims traceable to a named source.",
   "scripts": {
     "build": "tsc",
-    "gate:test": "tsx test/gate.test.ts",
+    "test": "tsx --test test/gate-logic.test.ts",
+    "gate:judge": "tsx test/gate-judge.test.ts",
     "run:reversal": "tsx scripts/reversal-run.ts",
     "run:conversation": "tsx scripts/conversation-run.ts",
     "run:brochure": "tsx scripts/brochure-run.ts",

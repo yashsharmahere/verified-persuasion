@@ -1,8 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Fragment, Passage, Verdict } from '../types.js';
 
-const anthropic = new Anthropic();
-
 /**
  * Decide whether a retrieved passage actually ENTAILS a claim.
  *
@@ -16,7 +14,7 @@ const anthropic = new Anthropic();
  * is NOT supported, because that drift is exactly how a sourced-looking
  * conversation ends up asserting things no source says.
  */
-const SYSTEM = `You decide whether a quoted passage entails a claim. You are not evaluating whether the claim is true in general — only whether THIS passage establishes it.
+export const JUDGE_SYSTEM_PROMPT = `You decide whether a quoted passage entails a claim. You are not evaluating whether the claim is true in general — only whether THIS passage establishes it.
 
 Answer "supported" only if a careful reader of the passage alone would agree the claim follows from it.
 
@@ -29,9 +27,42 @@ Answer "unsupported" if any of these hold:
 Return JSON only: {"supported": true|false, "reason": "one short sentence"}
 When supported is true, reason may be an empty string.`;
 
-export async function verifyFragment(fragment: Fragment, passages: Passage[]): Promise<Verdict> {
+/**
+ * One entailment decision. Injectable so the gate's control flow can be tested
+ * deterministically, and so the judge can be swapped without touching the gate.
+ */
+export type Judge = (claim: string, passage: Passage) => Promise<{ supported: boolean; reason?: string }>;
+
+/** The real judge: a model call per (claim, passage) pair. */
+export const modelJudge: Judge = async (claim, passage) => {
+  const anthropic = new Anthropic();
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 300,
+    system: JUDGE_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: `PASSAGE (from ${passage.source_name}):\n"""${passage.quote}"""\n\nCLAIM:\n"""${claim}"""`,
+      },
+    ],
+  });
+
+  const block = res.content.find((b) => b.type === 'text');
+  if (!block || block.type !== 'text') {
+    return { supported: false, reason: 'judge returned no text' };
+  }
+  return parseJudgeOutput(block.text);
+};
+
+export async function verifyFragment(
+  fragment: Fragment,
+  passages: Passage[],
+  judge: Judge = modelJudge,
+): Promise<Verdict> {
   // Only assertions need support. Questions, reflections and connectives assert
-  // nothing, so there is nothing to check.
+  // nothing, so there is nothing to check — and sending them to the judge would
+  // burn a call per fragment to answer a question nobody asked.
   if (fragment.kind !== 'assertion') {
     return { fragment, supported: true, passageId: null, reason: null };
   }
@@ -48,23 +79,21 @@ export async function verifyFragment(fragment: Fragment, passages: Passage[]): P
   // Check against each passage until one entails it. A claim needs one good
   // source, not all of them.
   for (const passage of passages) {
-    const res = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 300,
-      system: SYSTEM,
-      messages: [
-        {
-          role: 'user',
-          content: `PASSAGE (from ${passage.source_name}):\n"""${passage.quote}"""\n\nCLAIM:\n"""${fragment.text}"""`,
-        },
-      ],
-    });
+    let result: { supported: boolean; reason?: string };
+    try {
+      result = await judge(fragment.text, passage);
+    } catch (err) {
+      // A judge that throws has not established support. Fail closed: the whole
+      // point of the gate is that an error cannot become a pass.
+      return {
+        fragment,
+        supported: false,
+        passageId: null,
+        reason: `Judge failed: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
 
-    const block = res.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') continue;
-
-    const parsed = parseJson(block.text);
-    if (parsed.supported === true) {
+    if (result.supported) {
       return { fragment, supported: true, passageId: passage.id, reason: null };
     }
   }
@@ -77,20 +106,29 @@ export async function verifyFragment(fragment: Fragment, passages: Passage[]): P
   };
 }
 
-export async function verifyAll(fragments: Fragment[], passages: Passage[]): Promise<Verdict[]> {
-  return Promise.all(fragments.map((f) => verifyFragment(f, passages)));
+export async function verifyAll(
+  fragments: Fragment[],
+  passages: Passage[],
+  judge: Judge = modelJudge,
+): Promise<Verdict[]> {
+  return Promise.all(fragments.map((f) => verifyFragment(f, passages, judge)));
 }
 
-function parseJson(raw: string): { supported?: boolean; reason?: string } {
+/** Exported for testing: unparseable judge output must never read as support. */
+export function parseJudgeOutput(raw: string): { supported: boolean; reason?: string } {
   try {
     const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
     const body = fenced?.[1] ?? raw;
     const start = body.indexOf('{');
     const end = body.lastIndexOf('}');
     if (start === -1 || end === -1) return { supported: false, reason: 'unparseable judge output' };
-    return JSON.parse(body.slice(start, end + 1));
+    const parsed = JSON.parse(body.slice(start, end + 1));
+    // Strict: only a literal true counts. "true", 1, and undefined do not.
+    return {
+      supported: parsed.supported === true,
+      reason: typeof parsed.reason === 'string' ? parsed.reason : undefined,
+    };
   } catch {
-    // A judge whose output cannot be read has not established support.
     return { supported: false, reason: 'unparseable judge output' };
   }
 }

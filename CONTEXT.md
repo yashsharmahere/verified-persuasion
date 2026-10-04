@@ -27,11 +27,29 @@ authority. Where this repo and the brief disagree, the brief wins.
 | --- | --- |
 | Supabase schema, 8 tables + 3 metric views | project `dlreebwfwspyzsbuoixc`, region ap-south-1 |
 | The verification gate | `src/gate/` |
-| Gate test harness, 7 seeded cases | `test/gate.test.ts`, `data/gate-cases.json` |
+| Gate control-flow tests — 22, all passing, no API key needed | `test/gate-logic.test.ts` |
+| Judge-quality harness, 7 seeded near-miss cases | `test/gate-judge.test.ts`, `data/gate-cases.json` |
 | Design paper | `docs/02-design-paper.md` |
 
-Typechecks clean. The gate has **not** been run end to end — it needs an
-`ANTHROPIC_API_KEY` and nobody has executed `npm run gate:test` yet.
+**`npm test` passes (22/22).** It covers the deterministic half: what the
+gate does with a judge's answer. Every test there defends one property —
+no path turns an unverified claim into a sent one. Errors, malformed
+output, unknown labels and empty retrieval all fail closed.
+
+It already caught a real bug. `stripUnsupported` used `String.replace()`,
+which removes only the *first* match, so a claim appearing twice survived
+the strip — in the one function whose job is removing unsupported claims.
+Now uses split/join.
+
+**`npm run gate:judge` has never run.** It needs an `ANTHROPIC_API_KEY`
+and calls a real model, because the question it answers — is the judge
+strict enough on near-misses — cannot be answered by a stub. Until it
+runs, those 7 cases are assumptions.
+
+Its failures are graded, and the grading matters: a claim the judge
+*accepts* but shouldn't is critical (unsourced text reaches the
+participant, exit 1). A claim it *rejects* but shouldn't is minor (the
+system goes quiet, exit 0).
 
 ### Not done, and blocked
 

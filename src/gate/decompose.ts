@@ -1,8 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Fragment, ClaimKind } from '../types.js';
 
-const anthropic = new Anthropic();
-
 /**
  * Split a drafted turn into atomic fragments and label each one.
  *
@@ -15,7 +13,7 @@ const anthropic = new Anthropic();
  * that have lost the context needed to check them ("it rises with age" —
  * what does?), which is a documented failure mode of decompose-then-verify.
  */
-const SYSTEM = `You split text into atomic fragments and label each one. You do not evaluate, argue, or improve the text.
+export const DECOMPOSE_SYSTEM_PROMPT = `You split text into atomic fragments and label each one. You do not evaluate, argue, or improve the text.
 
 Split the input so that each fragment carries exactly one checkable idea, and enough context to be checked standing alone. Resolve pronouns and references as you split: "it rises with age" becomes "protein requirement rises with age".
 
@@ -35,33 +33,50 @@ Return JSON only: {"fragments":[{"text":"...","kind":"assertion"}]}`;
 
 const VALID_KINDS: ClaimKind[] = ['assertion', 'question', 'reflection', 'connective'];
 
-export async function decompose(draftedTurn: string): Promise<Fragment[]> {
+/** Injectable so the gate's control flow can be tested without a model. */
+export type Decomposer = (draftedTurn: string) => Promise<Fragment[]>;
+
+export const modelDecompose: Decomposer = async (draftedTurn) => {
+  const anthropic = new Anthropic();
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 2000,
-    system: SYSTEM,
+    system: DECOMPOSE_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: draftedTurn }],
   });
 
   const block = res.content.find((b) => b.type === 'text');
   if (!block || block.type !== 'text') throw new Error('decompose: no text in response');
 
-  const parsed = parseJson(block.text);
-  return parsed.fragments
-    .filter((f) => f.text?.trim())
-    .map((f) => ({
-      text: f.text.trim(),
-      // Anything we don't recognise is treated as an assertion, so an unexpected
-      // label can never be a way to skip verification.
-      kind: VALID_KINDS.includes(f.kind as ClaimKind) ? (f.kind as ClaimKind) : 'assertion',
-    }));
-}
+  return parseFragments(block.text);
+};
 
-function parseJson(raw: string): { fragments: { text: string; kind: string }[] } {
+export const decompose: Decomposer = modelDecompose;
+
+/** Exported for testing. */
+export function parseFragments(raw: string): Fragment[] {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   const body = fenced?.[1] ?? raw;
   const start = body.indexOf('{');
   const end = body.lastIndexOf('}');
-  if (start === -1 || end === -1) throw new Error(`decompose: no JSON object found in: ${raw.slice(0, 200)}`);
-  return JSON.parse(body.slice(start, end + 1));
+  if (start === -1 || end === -1) {
+    throw new Error(`decompose: no JSON object found in: ${raw.slice(0, 200)}`);
+  }
+
+  const parsed = JSON.parse(body.slice(start, end + 1)) as {
+    fragments?: { text?: string; kind?: string }[];
+  };
+
+  if (!Array.isArray(parsed.fragments)) {
+    throw new Error('decompose: response has no fragments array');
+  }
+
+  return parsed.fragments
+    .filter((f): f is { text: string; kind?: string } => typeof f.text === 'string' && f.text.trim() !== '')
+    .map((f) => ({
+      text: f.text.trim(),
+      // Anything we don't recognise is treated as an assertion, so an unexpected
+      // or malicious label can never be a way to skip verification.
+      kind: VALID_KINDS.includes(f.kind as ClaimKind) ? (f.kind as ClaimKind) : 'assertion',
+    }));
 }

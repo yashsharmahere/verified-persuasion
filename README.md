@@ -63,19 +63,33 @@ The belief, its reasons, and its source whitelist are **rows in a database**, no
 
 ```bash
 npm install
+npm test                 # gate control flow — no API key needed
 cp .env.example .env     # add ANTHROPIC_API_KEY and Supabase keys
-npm run gate:test        # does the gate catch bad claims?
+npm run gate:judge       # is the judge strict enough? calls a real model
 ```
 
-### Before you point it at a person
+### Two test suites, answering different questions
 
-`npm run gate:test` runs the gate against known-good and known-bad claims in `data/gate-cases.json`. Swap that file when you change belief.
+**`npm test`** — 22 tests, no key, no network. Covers what the gate does with a judge's answer. Every one defends a single property: *no path turns an unverified claim into a sent one.* A judge that throws, malformed JSON, an unrecognised fragment label, empty retrieval — all fail closed.
 
-The cases that matter are the **near-misses** — a claim that overstates its passage by one degree. "Associated with" → "causes". "In healthy older adults" → "in everyone". "May be higher" → "is higher". Those are what a real conversation produces, and what a loose checker waves through.
+**`npm run gate:judge`** — calls a real model against the cases in `data/gate-cases.json`. Swap that file when the belief changes. This is the one you run before pointing the system at a person.
 
-Two kinds of failure, and they are not equally bad:
-- **False negative** (good claim marked unsupported) → the system goes mute. Annoying.
-- **False positive** (bad claim marked supported) → unsourced claims reach the person. This is the one that invalidates the project.
+### What the judge test is actually for
+
+The cases that matter are not obvious fabrications. They are **near-misses** — a claim that overstates its passage by one degree:
+
+| Passage says | Claim says | Verdict |
+|---|---|---|
+| "associated with" | "causes" | unsupported |
+| "in healthy older adults" | "in everyone" | unsupported |
+| "may be higher" | "is higher" | unsupported |
+
+Those are what a real conversation produces, and what a similarity check waves through.
+
+The two failure modes are not equally bad, and the test grades them separately:
+
+- **False positive** (bad claim accepted) → **critical**, exits 1. Unsourced claims reach the person; this invalidates the project.
+- **False negative** (good claim rejected) → **minor**, exits 0. The system goes quiet. Tolerable, worth watching.
 
 ---
 

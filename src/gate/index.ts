@@ -1,11 +1,30 @@
 import type { GateResult, Passage, Verdict } from '../types.js';
-import { decompose } from './decompose.js';
-import { verifyAll } from './verify.js';
+import { modelDecompose, type Decomposer } from './decompose.js';
+import { verifyAll, modelJudge, type Judge } from './verify.js';
 
-export { decompose } from './decompose.js';
-export { verifyFragment, verifyAll } from './verify.js';
+export {
+  decompose,
+  modelDecompose,
+  parseFragments,
+  DECOMPOSE_SYSTEM_PROMPT,
+  type Decomposer,
+} from './decompose.js';
+export {
+  verifyFragment,
+  verifyAll,
+  modelJudge,
+  parseJudgeOutput,
+  JUDGE_SYSTEM_PROMPT,
+  type Judge,
+} from './verify.js';
 
-const MAX_REDRAFTS = 2;
+export const MAX_REDRAFTS = 2;
+
+export interface GateDeps {
+  decompose?: Decomposer;
+  judge?: Judge;
+  maxRedrafts?: number;
+}
 
 /**
  * The gate. Nothing reaches the participant without passing through it.
@@ -23,16 +42,21 @@ const MAX_REDRAFTS = 2;
 export async function runGate(
   draft: (feedback: string | null) => Promise<string>,
   passages: Passage[],
+  deps: GateDeps = {},
 ): Promise<GateResult> {
+  const decomposeFn = deps.decompose ?? modelDecompose;
+  const judge = deps.judge ?? modelJudge;
+  const maxRedrafts = deps.maxRedrafts ?? MAX_REDRAFTS;
+
   let feedback: string | null = null;
   let lastDraft = '';
   let lastVerdicts: Verdict[] = [];
 
-  for (let attempt = 0; attempt <= MAX_REDRAFTS; attempt++) {
+  for (let attempt = 0; attempt <= maxRedrafts; attempt++) {
     lastDraft = await draft(feedback);
 
-    const fragments = await decompose(lastDraft);
-    lastVerdicts = await verifyAll(fragments, passages);
+    const fragments = await decomposeFn(lastDraft);
+    lastVerdicts = await verifyAll(fragments, passages, judge);
 
     const unsupported = lastVerdicts.filter((v) => !v.supported);
 
@@ -57,12 +81,12 @@ export async function runGate(
     sentText: null,
     draftedText: lastDraft,
     verdicts: lastVerdicts,
-    redraftCount: MAX_REDRAFTS,
+    redraftCount: maxRedrafts,
     refused: true,
   };
 }
 
-function buildFeedback(unsupported: Verdict[]): string {
+export function buildFeedback(unsupported: Verdict[]): string {
   const lines = unsupported.map((v) => `- "${v.fragment.text}" — ${v.reason}`);
   return [
     'The following claims are not supported by any retrieved source and must not appear:',
@@ -83,7 +107,7 @@ function buildFeedback(unsupported: Verdict[]): string {
 export function stripUnsupported(draftedText: string, verdicts: Verdict[]): string {
   let out = draftedText;
   for (const v of verdicts) {
-    if (!v.supported) out = out.replace(v.fragment.text, '');
+    if (!v.supported) out = out.split(v.fragment.text).join('');
   }
   return out.replace(/\s{2,}/g, ' ').trim();
 }
