@@ -75,14 +75,32 @@ later enters the `passages` table with `human_verified = true`, because
 the brochure and the conversation will show those to the participant as
 the source's own words.
 
-### Not done, and blocked
+### Built, waiting on the participant
 
-Retrieval, the conversation loop, and the brochure. All three need the
-belief and the participant's stated reason, and neither exists yet.
+Belief-agnostic, so nothing here waits on the intake:
+
+| | Where |
+| --- | --- |
+| Retrieval (verified + whitelisted only, ranked by his reasons) | `src/retrieve.ts` |
+| Drafter (the only model call that writes to him) | `src/draft.ts` |
+| Conversation loop: draft → gate → log every attempt | `src/converse.ts` |
+| Brochure: the verified quotes themselves, built once, stored | `src/brochure.ts` |
+| HTTP handlers + participant pages (chat, brochure, 0–100 form) | `src/http.ts`, `api/`, `public/` |
+| Operator scripts: intake, passages, reversal, brochure, metrics | `scripts/` |
+| App tests, no key needed | `test/app.test.ts` |
+| Migration: run tokens, instrument, per-attempt claim log, `sent_claim_metrics` | `supabase/migrations/` (applied) |
+
+What it still needs: his intake (`data/intake.json`), verified passages
+(`data/passages.json`), a real-model run of the drafter (never run yet), and a
+Vercel deploy.
+
+**Two UCRs.** `run_claim_metrics` counts every drafted claim, including ones
+the gate blocked: that is the drafter's fabrication rate. `sent_claim_metrics`
+counts only what reached him: that should be 0. The gap is the gate's work.
 
 ### Not done, not blocked
 
-- Deploy for the live-project-link deliverable (needs a UI first)
+- Deploy for the live-project-link deliverable (UI exists; needs Vercel env vars)
 - Demo video
 - Case study
 

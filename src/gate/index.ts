@@ -51,12 +51,14 @@ export async function runGate(
   let feedback: string | null = null;
   let lastDraft = '';
   let lastVerdicts: Verdict[] = [];
+  const attempts: GateResult['attempts'] = [];
 
   for (let attempt = 0; attempt <= maxRedrafts; attempt++) {
     lastDraft = await draft(feedback);
 
     const fragments = await decomposeFn(lastDraft);
     lastVerdicts = await verifyAll(fragments, passages, judge);
+    attempts.push({ draft: lastDraft, verdicts: lastVerdicts });
 
     const unsupported = lastVerdicts.filter((v) => !v.supported);
 
@@ -67,6 +69,7 @@ export async function runGate(
         verdicts: lastVerdicts,
         redraftCount: attempt,
         refused: false,
+        attempts,
       };
     }
 
@@ -83,6 +86,7 @@ export async function runGate(
     verdicts: lastVerdicts,
     redraftCount: maxRedrafts,
     refused: true,
+    attempts,
   };
 }
 

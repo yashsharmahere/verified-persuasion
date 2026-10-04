@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A few questions</title><link rel="stylesheet" href="/app.css"></head>
+<body><main>
+<h1>A few questions</h1>
+<p>For each statement, write how sure you are that it is true:<br>
+<b>0</b> = definitely false, <b>50</b> = no idea, <b>100</b> = definitely true.</p>
+<p class="muted">There are no right answers. Please give your honest view today, not what you think anyone wants to hear.</p>
+<form id="form"></form>
+<div id="status"></div>
+</main>
+<script src="/common.js"></script>
+<script>
+const form = document.getElementById('form');
+const status = document.getElementById('status');
+const tp = params.get('tp') || '';
+
+(async () => {
+  try {
+    const d = await api('/api/instrument?t=' + encodeURIComponent(token) + '&tp=' + encodeURIComponent(tp));
+    if (d.submitted) { form.replaceWith(el('p', {}, 'Your answers are already recorded. Thank you.')); return; }
+    d.items.forEach((it) => {
+      form.append(el('div', { class: 'item' },
+        el('label', { for: 'q' + it.key }, it.text),
+        el('br'),
+        el('input', { type: 'number', id: 'q' + it.key, name: String(it.key), min: '0', max: '100', step: '1', required: '', inputmode: 'numeric' })));
+    });
+    form.append(el('div', { class: 'item' },
+      el('label', { for: 'open' }, 'What, if anything, changed your thinking? (Write as much or as little as you like.)'),
+      el('textarea', { id: 'open', rows: '4' })));
+    if (tp === 'delayed') {
+      form.append(el('div', { class: 'item' },
+        el('label', { for: 'by' }, 'Who is filling this in with you, if anyone?'),
+        el('input', { type: 'text', id: 'by' })));
+    }
+    form.append(el('div', { class: 'row' }, el('button', { type: 'submit' }, 'Submit answers')));
+  } catch (err) { showError(status, err); }
+})();
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const scores = {};
+  form.querySelectorAll('input[type=number]').forEach((i) => { scores[i.name] = Number(i.value); });
+  const by = document.getElementById('by');
+  try {
+    await api('/api/measure', { method: 'POST', body: JSON.stringify({
+      t: token, tp, scores,
+      open_response: document.getElementById('open').value,
+      collected_by: by ? by.value : null,
+    }) });
+    form.replaceWith(el('p', {}, 'Thank you — your answers are recorded.'));
+    status.replaceChildren();
+  } catch (err) { showError(status, err); }
+});
+</script>
+</body></html>

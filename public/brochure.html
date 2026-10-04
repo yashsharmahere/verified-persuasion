@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What the sources say</title><link rel="stylesheet" href="/app.css"></head>
+<body><main>
+<div id="doc"></div>
+<div class="row" id="next-row" hidden><button id="next">I've read it</button></div>
+</main>
+<script src="/common.js"></script>
+<script>
+const doc = document.getElementById('doc');
+(async () => {
+  try {
+    const d = await api('/api/brochure?t=' + encodeURIComponent(token));
+    doc.append(el('h1', {}, d.title), el('p', {}, d.intro));
+    d.items.forEach((it) => {
+      doc.append(el('div', { class: 'item' },
+        el('p', { class: 'quote' }, '“' + it.quote + '”'),
+        el('p', { class: 'muted' }, '— ', el('a', { href: it.source_url, target: '_blank', rel: 'noopener' }, it.source_name))));
+    });
+    document.getElementById('next-row').hidden = false;
+  } catch (err) { showError(doc, err); }
+})();
+document.getElementById('next').addEventListener('click', () => {
+  location.href = '/measure.html?tp=post_brochure&t=' + encodeURIComponent(token);
+});
+</script>
+</body></html>

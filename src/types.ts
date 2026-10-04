@@ -39,6 +39,12 @@ export interface GateResult {
   redraftCount: number;
   /** True when the gate ran out of redrafts and refused to send anything. */
   refused: boolean;
+  /**
+   * Every draft the gate saw, in order, with its verdicts. The claims blocked in
+   * earlier drafts are the evidence that the gate did something, so they are
+   * kept rather than discarded with the draft.
+   */
+  attempts: { draft: string; verdicts: Verdict[] }[];
 }
 
 /** Everything the system knows about the person and their belief. All of it data. */

@@ -1,0 +1,13 @@
+{
+  "_comment": "Copy to data/passages.json. Each quote must be checked word for word against the source document before human_verified is set to true. Unverified passages are loaded but never used.",
+  "passages": [
+    {
+      "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
+      "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
+      "quote": "for healthy older people, the diet should provide at least 1.0–1.2 g protein/kg body weight/day",
+      "applies_to": null,
+      "human_verified": true,
+      "checked": "Against the PDF, p.2, 2026-10-04, Yash"
+    }
+  ]
+}

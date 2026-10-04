@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversation</title><link rel="stylesheet" href="/app.css"></head>
+<body><main>
+<div id="log"></div>
+<div id="status"></div>
+<div class="row" id="done-row" hidden>
+  <button class="secondary" id="done">I'm done talking</button>
+</div>
+</main>
+<div class="composer" id="composer" hidden>
+  <form id="form"><textarea id="input" placeholder="Type your reply…" aria-label="Your reply"></textarea>
+  <button id="send" type="submit">Send</button></form>
+</div>
+<script src="/common.js"></script>
+<script>
+const log = document.getElementById('log');
+const status = document.getElementById('status');
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const send = document.getElementById('send');
+
+function addMessage(speaker, text, sources) {
+  const box = el('div', { class: 'msg ' + (speaker === 'participant' ? 'me' : 'sys') }, el('p', {}, text));
+  if (sources && sources.length) {
+    const s = el('div', { class: 'sources' }, 'Sources: ');
+    sources.forEach((src, i) => {
+      if (i) s.append('; ');
+      s.append(el('a', { href: src.url, target: '_blank', rel: 'noopener' }, src.name));
+    });
+    box.append(s);
+  }
+  log.append(box);
+  box.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function finish() {
+  location.href = '/measure.html?tp=post_treatment&t=' + encodeURIComponent(token);
+}
+
+async function load() {
+  try {
+    const s = await api('/api/session?t=' + encodeURIComponent(token));
+    s.turns.forEach((t) => addMessage(t.speaker, t.text));
+    if (s.ended) { finish(); return; }
+    document.getElementById('composer').hidden = false;
+    document.getElementById('done-row').hidden = false;
+  } catch (err) { showError(status, err); }
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+  send.disabled = input.disabled = true;
+  addMessage('participant', message);
+  status.replaceChildren(el('p', { class: 'muted' }, 'Checking every claim against its source… this can take a little while.'));
+  try {
+    const r = await api('/api/turn', { method: 'POST', body: JSON.stringify({ t: token, message }) });
+    status.replaceChildren();
+    addMessage('system', r.text, r.sources);
+  } catch (err) { showError(status, err); }
+  send.disabled = input.disabled = false;
+  input.focus();
+});
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+});
+
+document.getElementById('done').addEventListener('click', async () => {
+  if (!confirm('End the conversation? You won\'t be able to continue it.')) return;
+  try { await api('/api/end', { method: 'POST', body: JSON.stringify({ t: token }) }); finish(); }
+  catch (err) { showError(status, err); }
+});
+
+load();
+</script>
+</body></html>

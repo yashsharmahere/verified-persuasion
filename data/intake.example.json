@@ -1,0 +1,33 @@
+{
+  "_comment": "Copy to data/intake.json (gitignored: it holds a real person's words). Fill from the Run 0 interview, docs/03-intake-interview.md.",
+  "participant": {
+    "label": "P1",
+    "consented_at": "2026-10-05T10:00:00+05:30",
+    "disclosed_ai": true,
+    "notes": "Anything from Q12 that limits what the system may say goes here."
+  },
+  "belief": {
+    "domain": "nutrition",
+    "source_whitelist": ["espen.org", "acl.gov", "nin.res.in"]
+  },
+  "target": "T1",
+  "candidates": {
+    "T1": "A person over 60 can eat the same foods, in the same amounts, as at 30, without any extra risk to their health.",
+    "T2": "As you get older, you don't need to change what or how much you eat.",
+    "T3": "Eating more food is what keeps an older person strong."
+  },
+  "controls": {
+    "C1": "Reading in dim light permanently damages your eyesight.",
+    "C2": "Cold weather by itself causes colds.",
+    "C3": "Most petrol cars will be gone from Indian roads within 15 years.",
+    "C4": "Cracking your knuckles causes arthritis."
+  },
+  "baseline": {
+    "scores": { "T1": 0, "T2": 0, "T3": 0, "C1": 0, "C2": 0, "C3": 0, "C4": 0 },
+    "open_response": "Q13, word for word.",
+    "collected_by": "Yash"
+  },
+  "reasons": [
+    { "code": "never_heard_otherwise", "verbatim": "His exact words.", "is_primary": true }
+  ]
+}

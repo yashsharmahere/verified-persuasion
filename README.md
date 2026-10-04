@@ -63,14 +63,32 @@ The belief, its reasons, and its source whitelist are **rows in a database**, no
 
 ```bash
 npm install
-npm test                 # gate control flow — no API key needed
+npm test                 # gate + app control flow — no API key needed
+npm run dev -- --demo    # click through every page: in-memory data, stubbed model, no keys
 cp .env.example .env     # add ANTHROPIC_API_KEY and Supabase keys
 npm run gate:judge       # is the judge strict enough? calls a real model
 ```
 
+### Running a participant through it
+
+In run order. Each step prints the next one's input.
+
+```bash
+npm run intake:load -- data/intake.json                 # Run 0: participant, belief, reasons, baseline, links
+npm run passages:load -- --belief <id> data/passages.json  # only human_verified passages are ever used
+npm run run:reversal -- --belief <id> --claim "..."     # Run 1: before any person sees it
+npm run run:brochure -- --belief <id>                   # Run 2: builds the fixed page once
+npm run dev                                             # or deploy; the participant uses their links
+npm run metrics -- --belief <id>                        # UCR (drafted and sent), RCR, ΔB, control drift
+```
+
+`data/intake.example.json` and `data/passages.example.json` show the shapes. `data/intake.json` is gitignored: it holds a real person's words.
+
+The participant's browser holds only the token in their link. The service key, the passages and which scale item is the target stay on the server.
+
 ### Two test suites, answering different questions
 
-**`npm test`** — 22 tests, no key, no network. Covers what the gate does with a judge's answer. Every one defends a single property: *no path turns an unverified claim into a sent one.* A judge that throws, malformed JSON, an unrecognised fragment label, empty retrieval — all fail closed.
+**`npm test`** — no key, no network. `gate-logic` covers what the gate does with a judge's answer; `app` covers retrieval, the conversation loop, the brochure and the HTTP handlers against an in-memory store. Every one defends a single property: *no path turns an unverified claim into a sent one.* A judge that throws, malformed JSON, an unrecognised fragment label, empty retrieval — all fail closed.
 
 **`npm run gate:judge`** — calls a real model against the cases in `data/gate-cases.json`. Swap that file when the belief changes. This is the one you run before pointing the system at a person.
 
