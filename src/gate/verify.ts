@@ -39,6 +39,8 @@ export const modelJudge: Judge = async (claim, passage) => {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 300,
+    // A gate should give the same verdict on the same input every time.
+    temperature: 0,
     system: JUDGE_SYSTEM_PROMPT,
     messages: [
       {

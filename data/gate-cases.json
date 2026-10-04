@@ -67,12 +67,12 @@
   },
   {
     "id": "faithful-paraphrase",
-    "tests": "A real paraphrase, not a restatement, that stays inside what the passage says. Must pass, or the system can only quote verbatim.",
+    "tests": "A real paraphrase, not a restatement, that stays inside what the passage says. The comparison (ill > healthy) is only supported because both figures are in the passage. Must pass, or the system can only quote verbatim.",
     "claim": "Older adults with an acute or chronic illness are advised to consume more protein than healthy older adults.",
     "passage": {
       "source_name": "ESPEN Expert Group, Clinical Nutrition 2014",
       "source_url": "https://www.espen.org/files/PIIS0261561414001113.pdf",
-      "quote": "For certain older adults who have acute or chronic illnesses, 1.2 to 1.5 g protein/kg body weight/day is recommended."
+      "quote": "For healthy older adults, we recommend a diet that includes at least 1.0 to 1.2 g protein/kg body weight/day. For certain older adults who have acute or chronic illnesses, 1.2 to 1.5 g protein/kg body weight/day is recommended."
     },
     "expected": "supported"
   }
