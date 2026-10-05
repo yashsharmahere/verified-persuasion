@@ -139,7 +139,7 @@ looked broken. A real-model demo, with a spend cap, can come back after
 
 `/start.html`: open to anyone with a Google account (Supabase Auth, Google
 provider). Before 2026-10-05 it was an emailed magic link with an allow-list
-(Dad only); a no-login version with a private link was built and replaced
+(Yash's father only, since dropped as participant); a no-login version with a private link was built and replaced
 the same day, because a lost link loses the day-7 answer. Logging in is what
 lets someone come back on any device on day 7. New beliefs are capped at
 `MAX_NEW_BELIEFS_PER_DAY` across everyone (default 20; new participants at
@@ -194,27 +194,38 @@ control statements looking unrelated is by design: they are decoys.
 
 ## The one thing blocking everything
 
-**No participant, no belief, no reason.**
+**The participant has not done the run yet.**
 
-The candidate is Yash's father, who believes something along the lines of
-*a person should eat everything regardless of age*. That has not been
-sharpened into a measurable statement, and the baseline interview has not
-happened.
+**Participant (changed 2026-10-05):** someone Yash knows, not family, who
+believes *using a pillow while sleeping causes a double chin*. They take part
+on their own at /start.html with a Google account (add their Gmail to the
+Google Cloud test users first; the app is in Testing mode).
 
-Two problems with it, both known, neither resolved:
+Why this belief and not the others considered:
+- **Yash's father** ("I can eat the same at 60 as at 30") was dropped. It
+  split into a checkable part and a part the evidence partly supports (older
+  adults need *more* protein), and family raises demand characteristics: he
+  might move his number to please his son. A pilot run on it is kept in
+  `data/pilot-2026-10-05.md`.
+- **"Living in a joint family makes a person mentally, physically and
+  financially stable"** was not chosen: three claims in one, "stable" is
+  vague, the evidence runs both ways, and it sits close to culture and
+  identity, which the brief excludes.
+- **The pillow belief** is one concrete claim, checkable in under a minute,
+  and very likely unwarranted: trusted sources attribute a double chin to
+  fat under the chin, genetics, weight, anatomy and ageing skin. Its cost:
+  avoiding a pillow can mean neck pain and worse sleep.
 
-1. **It splits.** "I can eat the same things at 60 as at 30 without added
-   risk" is checkable and probably wrong. "Eat more for energy" is **not**
-   cleanly wrong — PROT-AGE and ESPEN both recommend older adults consume
-   *more* protein than younger adults (1.0–1.2 g/kg/day vs. 0.8). Contest
-   composition and portion, not quantity in general, or the system ends up
-   half-agreeing with him.
+Known limit: no trusted source found so far mentions pillows at all, so the
+system can only argue from what *does* cause a double chin. It must not say
+"pillows don't cause it" unless a source says so; the gate enforces that.
+Dermatology and plastic-surgery bodies (aad.org, plasticsurgery.org,
+bad.org.uk) were added to the health list for this belief. A search on
+2026-10-05 proposed six quotes from Johns Hopkins, Cleveland Clinic and the
+American Society of Plastic Surgeons.
 
-2. **He is family.** Demand characteristics are the single most likely way
-   this study produces a fake result — he may move his number to please his
-   son without his reasoning changing at all. Mitigations are in
-   `docs/02-design-paper.md` §10. They reduce it; they do not remove it.
-   Whatever remains gets stated in the case study.
+Not family, which removes the main demand-characteristic risk, but Yash
+still knows them; whatever remains gets stated in the case study.
 
 The intake interview guide is `docs/03-intake-interview.md`.
 

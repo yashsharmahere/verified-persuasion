@@ -37,7 +37,7 @@ unchecked reaches him."
 
 **Screen:** terminal output of `npm run run:reversal` — the drafts, the ✗
 marks, the OUTCOME line, and the TIME line.
-**Say:** "Before my father saw anything, I told it to argue for something
+**Say:** "Before the participant saw anything, I told it to argue for something
 false. Here's what it did." Read the outcome as it is.
 
 ### 5. The logbook (2:45–3:15)
