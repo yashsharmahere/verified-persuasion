@@ -142,11 +142,14 @@ export function assertionRows(turnId: string, gate: GateResult): AssertionRow[] 
 
 function citedSources(gate: GateResult, passages: Passage[]) {
   const ids = new Set(gate.verdicts.map((v) => v.passageId).filter((id): id is string => !!id));
+  // Keyed on name and link: several sections of one document share a link but
+  // not a name, and each section a reply rests on should be shown.
   const seen = new Set<string>();
   const out: { name: string; url: string }[] = [];
   for (const p of passages) {
-    if (!ids.has(p.id) || seen.has(p.source_url)) continue;
-    seen.add(p.source_url);
+    const key = `${p.source_name}\n${p.source_url}`;
+    if (!ids.has(p.id) || seen.has(key)) continue;
+    seen.add(key);
     out.push({ name: p.source_name, url: p.source_url });
   }
   return out;

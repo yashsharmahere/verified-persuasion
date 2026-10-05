@@ -66,7 +66,10 @@ function deps(drafts: string[]): TurnDeps & { calls: number } {
     calls: 0,
     draft: async () => drafts[Math.min(d.calls++, drafts.length - 1)]!,
     decompose: async (text: string) => [{ text, kind: 'assertion' as const }],
-    judge: async (claim: string, p: Passage) => ({ supported: claim === p.quote, reason: 'not in passage' }),
+    judge: async (claim: string, ps: Passage[]) => {
+      const p = ps.find((x) => x.quote === claim);
+      return { supported: !!p, passageId: p?.id ?? null, reason: 'not in passage' };
+    },
   };
   return d;
 }
@@ -120,6 +123,18 @@ test('a draft the gate passes is sent, logged, and its source named', async () =
   assert.equal(m.assertions.length, 1);
   assert.equal(m.assertions[0]!.sent, true);
   assert.equal(m.assertions[0]!.passage_id, 'p1');
+});
+
+test('two sections of one document are both named, though they share a link', async () => {
+  const url = 'https://www.example.org/guidelines.pdf';
+  const m = setup([
+    P('p1', { source_name: 'Guidelines (Section 11)', source_url: url }),
+    P('p2', { source_name: 'Guidelines (Section 16)', source_url: url }),
+  ]);
+  const d = deps(['quote p1|quote p2']);
+  d.decompose = async (text: string) => text.split('|').map((t) => ({ text: t, kind: 'assertion' as const }));
+  const r = await runTurn(m.store, run, 'hello', d);
+  assert.deepEqual(r.sources.map((x) => x.name), ['Guidelines (Section 11)', 'Guidelines (Section 16)']);
 });
 
 test('a refused turn shows the fixed refusal and sends nothing sourced', async () => {
