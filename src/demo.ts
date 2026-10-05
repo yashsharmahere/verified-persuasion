@@ -78,7 +78,10 @@ export async function demoSetup(tokens = { treatment: 'demo-treatment-token', br
       text
         .split(/(?<=[.?!"])\s+(?=[A-Z])/)
         .map((s) => ({ text: s, kind: s.trim().endsWith('?') ? ('question' as const) : ('assertion' as const) })),
-    judge: async (claim, passage) => ({ supported: claim.includes(passage.quote) }),
+    judge: async (claim, ps) => {
+      const p = ps.find((x) => claim.includes(x.quote));
+      return { supported: !!p, passageId: p?.id ?? null };
+    },
   };
 
   return {

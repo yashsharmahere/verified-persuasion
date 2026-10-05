@@ -27,6 +27,7 @@ Rules:
 - A sentence may contain several fragments. Split it.
 - When a fragment both restates the reader AND adds a new factual element, label it assertion.
 - Hedged claims ("studies suggest X") are still assertions.
+- Saying the speaker has no source on something, cannot back something up, or will not make a claim, or saying that something is a question for the reader's doctor, asserts nothing about the world: label it connective. Any statement of what a source or the evidence DOES say is an assertion.
 - Do not drop any content. Every word of the input belongs to some fragment.
 
 Return JSON only: {"fragments":[{"text":"...","kind":"assertion"}]}`;

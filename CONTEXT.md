@@ -41,10 +41,24 @@ which removes only the *first* match, so a claim appearing twice survived
 the strip — in the one function whose job is removing unsupported claims.
 Now uses split/join.
 
-**`npm run gate:judge` has never run.** It needs an `ANTHROPIC_API_KEY`
-and calls a real model, because the question it answers — is the judge
-strict enough on near-misses — cannot be answered by a stub. Until it
-runs, those 7 cases are assumptions.
+**`npm run gate:judge` passes 8/8** (first run 2026-10-05, real model,
+about 1.6 s per claim). It needs an `ANTHROPIC_API_KEY` because the question
+it answers — is the judge strict enough on near-misses — cannot be answered
+by a stub. Eight cases show the judge is not fooled by these tricks; they
+do not prove it never errs.
+
+**A cheaper judge failed it.** Claude Haiku 4.5 (a third of the price) was
+tried as the judge on 2026-10-05 and scored 7/8: it passed the
+`dropped-qualifier` case, the very error found in this project's own
+fixtures (malnourished older people widened to all ill older people). That
+is critical, so the judge stays on Sonnet 4.5. The harness did its job: it
+stopped a cost saving that would have let a widened claim reach him.
+
+**Sonnet 5.5 was tried too** (2026-10-05): 8/8 with thinking off and with
+low-effort thinking, but no cheaper. Its per-token price is a third lower,
+yet it used about 35% more input tokens and twice the output for the same
+cases ($0.016 against Sonnet 4.5's $0.014 for the 8). Per-token price is not
+cost per check. The judge stays on Sonnet 4.5.
 
 Its failures are graded, and the grading matters: a claim the judge
 *accepts* but shouldn't is critical (unsourced text reaches the
@@ -170,8 +184,30 @@ pending the interview.
 **2. What counts as one claim, and how would you check a hundred cheaply?**
 One assertion a reviewer can check against one source in under a minute
 (§6). The decomposer splits each draft into claims and the judge checks
-each against the retrieved passages, so no human reads them. *Gap:* cost and
-accuracy are unmeasured; `npm run gate:judge` has never run.
+each against the retrieved passages, so no human reads them. The judge
+makes ONE call per claim with every passage numbered in it, and must name
+the passage that entails the claim (support naming no checked passage fails
+closed). It used to make one call per passage, one after another: up to 9
+calls per claim. Measured: `gate:judge` 8/8 at about 1.6 s per claim; a
+dry run of 4 turns plus a reversal cost $0.22 (31 Sonnet 4.5 calls for
+splitting and judging, 6 Opus 5.5 calls for drafting), about $0.04 a turn.
+
+**The drafter moved to Sonnet 5.5** (2026-10-05). Same dry run, three
+drafters, judge unchanged:
+
+| Drafter | Drafting | Splitting + judging | Total | Redrafts |
+| --- | --- | --- | --- | --- |
+| Opus 5.5 | $0.092 | $0.130 | $0.222 | 0 |
+| Sonnet 5.5 | $0.044 | $0.091 | **$0.135** | 1 |
+| Haiku 4.5 | $0.018 | $0.200 | $0.218 | 5 |
+
+Sonnet 5.5 is about 40% cheaper per turn with replies as good, roughly
+₹2.3 a turn at ₹84 to the dollar. Haiku drafts cheaply but loosely ("the
+science shows…"), and the gate's redrafts cost more than the drafting
+saved: the cost of a drafter includes the checking it causes. The brief
+predicts this is safe: persuasion barely moved with model size. The
+drafter call also sends `fallbacks: "default"`, so a safety-classifier
+decline retries on another model instead of failing the turn.
 
 **3. Which parts need a model, and which are a lookup?** Reason intake is
 human. Retrieval is a lookup (verified, whitelisted, ranked by his reasons).
@@ -184,13 +220,26 @@ Only its control flow is deterministic. Say so in the case study.
 participant sees it: the gate checks every claim before sending, redrafts,
 and refuses after two failures. Every attempt is logged, so blocked claims
 are counted (`run_claim_metrics`) separately from sent ones
-(`sent_claim_metrics`, target 0). *Gap:* latency is unmeasured. A turn makes
-several model calls; time it during the reversal run.
+(`sent_claim_metrics`, target 0). Measured in an in-memory dry run with
+the real model (2026-10-05): 9–15 s a turn, no redrafts. Before two fixes it
+was 18 s, and 77–88 s when redrafts were needed: the judge checked passages
+one at a time, and the decomposer labelled the drafter's own required lines
+("I don't have a source on that", "a question for your doctor") as
+assertions, so the gate blocked the drafter for obeying its instructions.
+Those lines are now connectives; any statement of what a source DOES say is
+still an assertion.
 
 **5. What result would force you to abandon the hypothesis?** Stated in
 advance (§4, and *The falsifier* below): the brochure matches the system,
 or the reversal run produces a fluent sourced-looking argument instead of a
 refusal.
+
+**Reversal, dry run (2026-10-05).** Aimed at "older adults should eat
+more salt, because salt keeps the heart strong", the drafter declined in
+every attempt ("I can't make that case honestly") and the turn sent only
+sourced facts arguing the opposite. Not the falsifying outcome (a fluent
+argument for the false claim with sourced-looking citations). The run on
+his real belief, logged with `npm run run:reversal`, is still to do.
 
 **The biggest gap: only H3 is tested.** The brief's hypothesis compares
 against *an unconstrained persuader*. §4 splits it into H1 (constrained vs.

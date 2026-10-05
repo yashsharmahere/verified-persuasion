@@ -38,8 +38,13 @@ const passage = (id: string, quote: string): Passage => ({
 
 const P = [passage('p1', 'first passage'), passage('p2', 'second passage')];
 
-const alwaysSupports: Judge = async () => ({ supported: true });
+const alwaysSupports: Judge = async (_claim, ps) => ({ supported: true, passageId: ps[0]!.id });
 const neverSupports: Judge = async () => ({ supported: false, reason: 'not entailed' });
+/** A judge that supports a claim (citing the first passage) when the predicate holds. */
+const byClaim =
+  (ok: (claim: string) => boolean): Judge =>
+  async (claim, ps) =>
+    ok(claim) ? { supported: true, passageId: ps[0]!.id } : { supported: false, reason: 'not entailed' };
 
 // ---------------------------------------------------------------- verifyFragment
 
@@ -64,21 +69,33 @@ test('an assertion with no retrieved passages is unsupported', async () => {
   assert.match(v.reason ?? '', /No passages retrieved/);
 });
 
-test('the supporting passage is the one recorded, not the first tried', async () => {
-  const judge: Judge = async (_claim, p) => ({ supported: p.id === 'p2' });
+test('the supporting passage is the one the judge names, not the first sent', async () => {
+  const judge: Judge = async () => ({ supported: true, passageId: 'p2' });
   const v = await verifyFragment({ text: 'claim', kind: 'assertion' }, P, judge);
   assert.equal(v.supported, true);
   assert.equal(v.passageId, 'p2', 'must record which passage actually entailed it');
 });
 
-test('checking stops at the first passage that entails the claim', async () => {
+test('one judge call per claim, however many passages there are', async () => {
   let called = 0;
-  const judge: Judge = async () => {
+  let sent = 0;
+  const judge: Judge = async (_claim, ps) => {
     called++;
-    return { supported: true };
+    sent = ps.length;
+    return { supported: false };
   };
   await verifyFragment({ text: 'claim', kind: 'assertion' }, P, judge);
-  assert.equal(called, 1, 'should not keep checking after a pass');
+  assert.equal(called, 1, 'checking a claim costs one call, not one per passage');
+  assert.equal(sent, P.length, 'the judge sees every retrieved passage');
+});
+
+test('support that names no passage, or one that was not checked, fails closed', async () => {
+  for (const passageId of [undefined, null, 'p9']) {
+    const judge: Judge = async () => ({ supported: true, passageId });
+    const v = await verifyFragment({ text: 'claim', kind: 'assertion' }, P, judge);
+    assert.equal(v.supported, false, `passageId ${passageId} must not count as support`);
+    assert.equal(v.passageId, null);
+  }
 });
 
 test('a claim no passage entails is unsupported', async () => {
@@ -97,6 +114,13 @@ test('a judge that throws fails closed', async () => {
 });
 
 // ------------------------------------------------------------- parseJudgeOutput
+
+test('the passage number is read only when it is a positive whole number', () => {
+  assert.equal(parseJudgeOutput('{"supported": true, "passage": 2}').passage, 2);
+  for (const bad of ['"2"', '0', '-1', '1.5', 'null']) {
+    assert.equal(parseJudgeOutput(`{"supported": true, "passage": ${bad}}`).passage, undefined, bad);
+  }
+});
 
 test('only a literal true counts as support', () => {
   assert.equal(parseJudgeOutput('{"supported": true}').supported, true);
@@ -179,10 +203,7 @@ test('an unsupported claim triggers a redraft, and a clean redraft is sent', asy
   let n = 0;
   const seenFeedback: (string | null)[] = [];
 
-  const judge: Judge = async (claim) => ({
-    supported: !claim.includes('Bad'),
-    reason: 'not entailed',
-  });
+  const judge = byClaim((claim) => !claim.includes('Bad'));
 
   const result = await runGate(
     async (feedback) => {
@@ -235,7 +256,7 @@ test('a turn of only questions and connectives is sent without any judge call', 
 });
 
 test('one bad claim among many still blocks the turn', async () => {
-  const judge: Judge = async (claim) => ({ supported: !claim.includes('Bad') });
+  const judge = byClaim((claim) => !claim.includes('Bad'));
   const result = await runGate(async () => 'Good one. Good two. Bad three. Good four.', P, {
     decompose: naiveDecompose,
     judge,
