@@ -79,6 +79,7 @@ if (supportedCases < 2) {
 async function main() {
   let passed = 0;
   const failures: { severity: 'critical' | 'minor'; detail: string }[] = [];
+  const started = Date.now();
 
   for (const c of cases) {
     const passage: Passage = {
@@ -91,19 +92,21 @@ async function main() {
       applies_to: null,
     };
 
+    const t0 = Date.now();
     const verdict = await verifyFragment({ text: c.claim, kind: 'assertion' }, [passage]);
+    const secs = ((Date.now() - t0) / 1000).toFixed(1);
     const got = verdict.supported ? 'supported' : 'unsupported';
 
     if (got === c.expected) {
       passed++;
-      console.log(`  pass  ${c.id}`);
+      console.log(`  pass  ${c.id}  (${secs}s)`);
       continue;
     }
 
     // A false positive lets an unsourced claim reach the participant.
     // A false negative only makes the system quieter than it needs to be.
     const severity = c.expected === 'unsupported' ? 'critical' : 'minor';
-    console.log(`  FAIL  ${c.id}  expected ${c.expected}, got ${got}  [${severity}]`);
+    console.log(`  FAIL  ${c.id}  expected ${c.expected}, got ${got}  [${severity}]  (${secs}s)`);
     failures.push({
       severity,
       detail:
@@ -113,7 +116,9 @@ async function main() {
     });
   }
 
-  console.log(`\n${passed}/${cases.length} passed`);
+  // One judge call per case: the per-claim cost of checking (brief Q2).
+  const total = (Date.now() - started) / 1000;
+  console.log(`\n${passed}/${cases.length} passed · ${total.toFixed(1)}s total, ${(total / cases.length).toFixed(1)}s per claim`);
 
   if (failures.length === 0) return;
 

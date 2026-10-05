@@ -19,7 +19,7 @@ authority. Where this repo and the brief disagree, the brief wins.
 
 ---
 
-## State as of 2026-10-04
+## State as of 2026-10-05
 
 ### Done
 
@@ -65,9 +65,9 @@ One of them had drifted:
 That is a silently widened population — the same error category the
 `overstated-population` case exists to catch, committed inside the gate's
 own test data. It is now a test case of its own (`dropped-qualifier`),
-and every case carries a `source_checked` flag. One case,
-`correlation-to-causation`, is still `false` and its quote needs checking
-against the AusDiab paper.
+and every case carries a `source_checked` flag. All are now `true`: the
+`correlation-to-causation` quote turned out not to be in the AusDiab paper
+at all and was replaced with text that is (commit 36c0ae9).
 
 The general lesson, which belongs in the case study: **a quote nobody
 opened is not a quote.** The same discipline applies to every row that
@@ -91,16 +91,38 @@ Belief-agnostic, so nothing here waits on the intake:
 | Migration: run tokens, instrument, per-attempt claim log, `sent_claim_metrics` | `supabase/migrations/` (applied) |
 
 What it still needs: his intake (`data/intake.json`), verified passages
-(`data/passages.json`), a real-model run of the drafter (never run yet), and a
-Vercel deploy.
+(`data/passages.json`), and a real-model run of the drafter (never run yet).
+
+**Passages.** `data/passages.json` holds 8 candidates from ICMR-NIN *Dietary
+Guidelines for Indians 2024* (Guideline 16 on the elderly, Guideline 11 on
+salt), with PDF and printed page numbers. Each matched the PDF text word for
+word, but all are `human_verified: false` until Yash checks them against the
+official PDF. They fix a real gap: the earlier shelf was mostly protein
+quotes, and protein needs *rise* with age, so they half-agreed with the
+belief. NIN says energy needs fall: "An elderly person needs fewer calories
+but more micronutrients than someone in mid-life." The final list depends on
+whom he says he trusts (intake Q6–Q7). nin.res.in is blocked from the cloud
+sessions; the PDF was read from Yash's Google Drive.
 
 **Two UCRs.** `run_claim_metrics` counts every drafted claim, including ones
 the gate blocked: that is the drafter's fabrication rate. `sent_claim_metrics`
 counts only what reached him: that should be 0. The gap is the gate's work.
 
+### Deployed
+
+Live at https://verified-persuasion-app.vercel.app (Vercel project
+`verified-persuasion-app`, team `yash-sh-projects`; pushes to `main` deploy to
+production). Env vars set: `ANTHROPIC_API_KEY`, `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `BASE_URL`.
+
+The homepage explains the system with a worked example. A public demo with
+a stubbed model was tried and removed: the stub ignores what you type, so it
+looked broken. A real-model demo, with a spend cap, can come back after
+`gate:judge` and the reversal run pass. Local click-through:
+`npm run dev -- --demo`.
+
 ### Not done, not blocked
 
-- Deploy for the live-project-link deliverable (UI exists; needs Vercel env vars)
 - Demo video
 - Case study
 
@@ -131,6 +153,54 @@ Two problems with it, both known, neither resolved:
    Whatever remains gets stated in the case study.
 
 The intake interview guide is `docs/03-intake-interview.md`.
+
+---
+
+## The brief's five questions, and where each is answered
+
+The brief (§04) asks five questions. Short answers, with the gaps stated,
+because the case study has to answer them honestly.
+
+**1. Why does this person hold this belief?** Design paper §3: never met
+the counter-evidence; met it but distrusts the source; or the belief is
+doing work for him (identity: "I've always been strong"). Each calls for
+different retrieval. The intake guide is built around these three. Answer
+pending the interview.
+
+**2. What counts as one claim, and how would you check a hundred cheaply?**
+One assertion a reviewer can check against one source in under a minute
+(§6). The decomposer splits each draft into claims and the judge checks
+each against the retrieved passages, so no human reads them. *Gap:* cost and
+accuracy are unmeasured; `npm run gate:judge` has never run.
+
+**3. Which parts need a model, and which are a lookup?** Reason intake is
+human. Retrieval is a lookup (verified, whitelisted, ranked by his reasons).
+Drafting is a model. Decomposing and judging are models. Send / redraft /
+refuse is plain code. *Correction:* §5's diagram labels the gate
+"deterministic". It is not: it makes two model calls (decompose, judge).
+Only its control flow is deterministic. Say so in the case study.
+
+**4. How would you notice an unsupported claim, and how fast?** Before the
+participant sees it: the gate checks every claim before sending, redrafts,
+and refuses after two failures. Every attempt is logged, so blocked claims
+are counted (`run_claim_metrics`) separately from sent ones
+(`sent_claim_metrics`, target 0). *Gap:* latency is unmeasured. A turn makes
+several model calls; time it during the reversal run.
+
+**5. What result would force you to abandon the hypothesis?** Stated in
+advance (§4, and *The falsifier* below): the brochure matches the system,
+or the reversal run produces a fluent sourced-looking argument instead of a
+refusal.
+
+**The biggest gap: only H3 is tested.** The brief's hypothesis compares
+against *an unconstrained persuader*. §4 splits it into H1 (constrained vs.
+unconstrained arm), H2 (reason-matched vs. reason-blind retrieval) and H3
+(system vs. brochure). The run order tests H3 and the reversal only; no
+unconstrained or reason-blind arm is built, and one participant cannot
+fairly be persuaded three times. The case study must say this plainly:
+*with one participant, H3 and the reversal were tested; H1 and H2 need more
+participants and remain untested.* Claiming otherwise would fail the
+Learning criterion.
 
 ---
 
@@ -215,13 +285,13 @@ it, and reporting it honestly is a graded criterion.
   Hosted, so it survives any session.
 - **`.env`**: not in the repo. Needs `ANTHROPIC_API_KEY` and
   `SUPABASE_SERVICE_ROLE_KEY`. See `.env.example`.
-- **Deploy target**: Vercel, not yet set up.
+- **Deploy target**: Vercel, live (see *Deployed* above).
 
 ---
 
 ## Deliverables (submission template)
 
-1. Live project link — not started
+1. Live project link — https://verified-persuasion-app.vercel.app (explainer live; real run pending)
 2. GitHub repo — this
 3. Demo video — not started
 4. Case study — not started

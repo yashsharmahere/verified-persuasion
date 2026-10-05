@@ -101,8 +101,8 @@ Four stages, with one blocking gate:
 
 ```
   1. Reason intake  →  2. Retrieval  →  3. Draft turn  →  4. Gate
-  (human, once)        (determin-       (the only         (determin-
-                        istic)           model step)       istic, blocking)
+  (human, once)        (determin-       (model: the       (two model calls,
+                        istic)           only writer)      fixed rules, blocking)
                                                                   │
                                               ┌───────────────────┴──────────┐
                                               ▼                              ▼
@@ -117,9 +117,11 @@ The gate is the whole product. Everything else is conventional.
 
 **Stage 2 is a lookup.** Retrieval is keyed by which reason each claim answers. Given the coded reason, it returns the eligible shortlist from whitelisted sources. No model judgement enters here — if a claim has no retrieved passage behind it, it cannot be said, which is what makes the refusal behaviour a property of the architecture rather than of a prompt.
 
-**Stage 3 is the only probabilistic component.** An LLM composes a conversational turn from the retrieved material. It is free with the prose and unfree with the content.
+**Stage 3 is the only component that writes to the participant.** An LLM composes a conversational turn from the retrieved material. It is free with the prose and unfree with the content.
 
 **Stage 4 decomposes what it wrote back into atomic claims and checks each against the retrieved passages.** Any claim not entailed by a passage is stripped and the turn is redrafted. The gate blocks; it does not warn. A logged refusal is a data point, not an error.
+
+*Correction (2026-10-05).* An earlier version of this section called the gate deterministic and the draft the only model step. Both were wrong. Decomposing and judging are model calls too, so the gate is probabilistic in what it judges. What is deterministic is its control flow: an unknown label counts as an assertion, any error or malformed verdict counts as unsupported, and nothing is sent unless every assertion passed. The gate can still be wrong, and the place it would be wrong is the judge, which is why `npm run gate:judge` exists.
 
 The asymmetry is deliberate: a model that invents a claim mid-sentence is normal behaviour, and no prompt reliably prevents it. Catching it after generation is tractable. Preventing it during generation is not.
 

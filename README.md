@@ -65,7 +65,6 @@ The belief, its reasons, and its source whitelist are **rows in a database**, no
 npm install
 npm test                 # gate + app control flow — no API key needed
 npm run dev -- --demo    # click through every page: in-memory data, stubbed model, no keys
-                         # (the live homepage runs the same demo, one copy per visitor: api/demo.ts)
 cp .env.example .env     # add ANTHROPIC_API_KEY and Supabase keys
 npm run gate:judge       # is the judge strict enough? calls a real model
 ```

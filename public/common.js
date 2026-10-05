@@ -2,18 +2,11 @@
 const params = new URLSearchParams(location.search);
 const token = params.get('t') || '';
 
-// Demo links (demo-*) go to the public demo, which keeps its data in memory
-// and never reaches the participant database. Same handlers, same pages.
+// Demo links (demo-*) exist only under `npm run dev -- --demo`: in-memory data, stubbed model.
 const isDemo = token.startsWith('demo-');
 
-function apiPath(path) {
-  if (!isDemo) return path;
-  const [route, query] = path.replace(/^\/api\//, '').split('?');
-  return '/api/demo?route=' + route + (query ? '&' + query : '');
-}
-
 async function api(path, opts = {}) {
-  const res = await fetch(apiPath(path), {
+  const res = await fetch(path, {
     ...opts,
     headers: { 'content-type': 'application/json', ...(opts.headers || {}) },
   });
@@ -36,9 +29,26 @@ function showError(where, err) {
   where.replaceChildren(el('p', { class: 'error' }, err.message || String(err)));
 }
 
+const BRAND_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><circle cx="16" cy="16" r="11.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".35" stroke-width="1"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="var(--accent)"/><path d="M4.6 8.3l2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+// The same small header on every participant page.
+const topbar = el('header', { class: 'topbar' });
+const brand = el('a', { class: 'brand', href: isDemo ? '/' : '#' });
+brand.innerHTML = BRAND_SVG + '<span>Verified Persuasion</span>';
+if (!isDemo) brand.removeAttribute('href');
+topbar.append(brand, el('span', { class: 'muted tagline' }, 'Every fact is checked against its source'));
+document.body.prepend(topbar);
+
+// A "working on it" bubble with animated dots.
+function thinking(text) {
+  return el('div', { class: 'thinking', role: 'status' },
+    el('span', { class: 'dots', 'aria-hidden': 'true' }, el('i'), el('i'), el('i')), text);
+}
+
 if (isDemo) {
   document.querySelector('main').prepend(el('div', { class: 'demo-banner' },
-    el('b', {}, 'Demo. '),
-    'A made-up belief, and a stand-in for the AI model that only quotes its sources word for word. Nothing here reaches the study’s database. ',
-    el('a', { href: '/' }, 'Back to the start')));
+    el('span', {}, el('b', {}, 'Local demo. '),
+      'The belief is made up, and a stand-in replaces the AI model: it only quotes its sources word for word. Nothing here is saved. ',
+      el('a', { href: '/' }, 'Back to the start'))));
 }

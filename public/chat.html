@@ -1,15 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Conversation</title><link rel="stylesheet" href="/app.css"></head>
-<body><main>
-<div id="log"></div>
+<body class="chat"><main>
+<div id="log" aria-live="polite"></div>
 <div id="status"></div>
-<div class="row" id="done-row" hidden>
-  <button class="secondary" id="done">I'm done talking</button>
+<div class="row end-row" id="done-row" hidden>
+  <button class="secondary" id="done" type="button">I'm done talking</button>
+  <button id="done-yes" type="button" hidden>Yes, end the conversation</button>
+  <button class="secondary" id="done-no" type="button" hidden>Keep talking</button>
 </div>
 </main>
 <div class="composer" id="composer" hidden>
-  <form id="form"><textarea id="input" placeholder="Type your reply…" aria-label="Your reply"></textarea>
+  <form id="form"><textarea id="input" rows="1" placeholder="Type your reply…" aria-label="Your reply"></textarea>
   <button id="send" type="submit">Send</button></form>
 </div>
 <script src="/common.js"></script>
@@ -21,15 +23,21 @@ const input = document.getElementById('input');
 const send = document.getElementById('send');
 
 function addMessage(speaker, text, sources) {
-  const box = el('div', { class: 'msg ' + (speaker === 'participant' ? 'me' : 'sys') }, el('p', {}, text));
+  const me = speaker === 'participant';
+  const bubble = el('div', { class: 'bubble' }, el('p', {}, text));
   if (sources && sources.length) {
-    const s = el('div', { class: 'sources' }, 'Sources: ');
-    sources.forEach((src, i) => {
-      if (i) s.append('; ');
-      s.append(el('a', { href: src.url, target: '_blank', rel: 'noopener' }, src.name));
+    const badge = el('span', { class: 'checked' });
+    badge.innerHTML = CHECK_SVG + 'Every fact checked against';
+    const s = el('div', { class: 'sources' }, badge);
+    sources.forEach((src) => {
+      s.append(el('a', { class: 'source-link', href: src.url, target: '_blank', rel: 'noopener' }, src.name));
     });
-    box.append(s);
+    bubble.append(s);
   }
+  const who = el('span', { class: 'who' });
+  if (me) who.textContent = 'You';
+  else who.innerHTML = BRAND_SVG + 'AI assistant';
+  const box = el('div', { class: 'msg ' + (me ? 'me' : 'sys') }, who, bubble);
   log.append(box);
   box.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
@@ -38,13 +46,21 @@ function finish() {
   location.href = '/measure.html?tp=post_treatment&t=' + encodeURIComponent(token);
 }
 
+function grow() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+}
+
 async function load() {
+  status.replaceChildren(thinking('Loading the conversation…'));
   try {
     const s = await api('/api/session?t=' + encodeURIComponent(token));
+    status.replaceChildren();
     s.turns.forEach((t) => addMessage(t.speaker, t.text));
     if (s.ended) { finish(); return; }
     document.getElementById('composer').hidden = false;
     document.getElementById('done-row').hidden = false;
+    input.focus();
   } catch (err) { showError(status, err); }
 }
 
@@ -53,26 +69,38 @@ form.addEventListener('submit', async (e) => {
   const message = input.value.trim();
   if (!message) return;
   input.value = '';
+  grow();
   send.disabled = input.disabled = true;
   addMessage('participant', message);
-  status.replaceChildren(el('p', { class: 'muted' }, 'Checking every claim against its source… this can take a little while.'));
+  const wait = thinking('Checking every fact against its source. This can take a little while…');
+  log.append(wait);
+  wait.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  status.replaceChildren();
   try {
     const r = await api('/api/turn', { method: 'POST', body: JSON.stringify({ t: token, message }) });
-    status.replaceChildren();
+    wait.remove();
     addMessage('system', r.text, r.sources);
-  } catch (err) { showError(status, err); }
+  } catch (err) { wait.remove(); showError(status, err); }
   send.disabled = input.disabled = false;
   input.focus();
 });
 
+input.addEventListener('input', grow);
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
 });
 
-document.getElementById('done').addEventListener('click', async () => {
-  if (!confirm('End the conversation? You won\'t be able to continue it.')) return;
+// Ending is final, so ask on the page itself rather than in a browser pop-up.
+const done = document.getElementById('done');
+const yes = document.getElementById('done-yes');
+const no = document.getElementById('done-no');
+function asking(on) { done.hidden = on; yes.hidden = no.hidden = !on; }
+done.addEventListener('click', () => { asking(true); yes.focus(); });
+no.addEventListener('click', () => { asking(false); input.focus(); });
+yes.addEventListener('click', async () => {
+  yes.disabled = true;
   try { await api('/api/end', { method: 'POST', body: JSON.stringify({ t: token }) }); finish(); }
-  catch (err) { showError(status, err); }
+  catch (err) { yes.disabled = false; showError(status, err); }
 });
 
 load();
