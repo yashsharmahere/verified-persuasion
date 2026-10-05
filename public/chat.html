@@ -26,7 +26,7 @@ function addMessage(speaker, text, sources) {
   const me = speaker === 'participant';
   const bubble = el('div', { class: 'bubble' }, el('p', {}, text));
   if (sources && sources.length) {
-    const badge = el('span', { class: 'checked' });
+    const badge = el('span', { class: 'checked stamp-in' });
     badge.innerHTML = CHECK_SVG + 'Every fact checked against';
     const s = el('div', { class: 'sources' }, badge);
     sources.forEach((src) => {
@@ -72,15 +72,26 @@ form.addEventListener('submit', async (e) => {
   grow();
   send.disabled = input.disabled = true;
   addMessage('participant', message);
-  const wait = thinking('Checking every fact against its source. This can take a little while…');
+  // The steps every reply goes through, in order. Timing is approximate; the
+  // last step stays until the checked reply arrives.
+  const stages = ['Writing a reply…', 'Splitting it into single facts…', 'Checking each fact against its source…'];
+  const label = el('span', { class: 'stage-label' }, stages[0]);
+  const wait = el('div', { class: 'thinking', role: 'status' },
+    el('span', { class: 'dots', 'aria-hidden': 'true' }, el('i'), el('i'), el('i')), label);
+  let stage = 0;
+  const ticker = setInterval(() => {
+    if (stage >= stages.length - 1) return clearInterval(ticker);
+    label.classList.add('swap');
+    setTimeout(() => { label.textContent = stages[++stage]; label.classList.remove('swap'); }, 250);
+  }, 3500);
   log.append(wait);
   wait.scrollIntoView({ behavior: 'smooth', block: 'end' });
   status.replaceChildren();
   try {
     const r = await api('/api/turn', { method: 'POST', body: JSON.stringify({ t: token, message }) });
-    wait.remove();
+    clearInterval(ticker); wait.remove();
     addMessage('system', r.text, r.sources);
-  } catch (err) { wait.remove(); showError(status, err); }
+  } catch (err) { clearInterval(ticker); wait.remove(); showError(status, err); }
   send.disabled = input.disabled = false;
   input.focus();
 });

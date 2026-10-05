@@ -3,7 +3,7 @@
 <title>Verified Persuasion</title>
 <meta name="description" content="A conversation system that may only say what it can trace to a named source.">
 <link rel="stylesheet" href="/app.css"></head>
-<body class="wide">
+<body class="wide home">
 <header class="topbar">
   <span class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><circle cx="16" cy="16" r="11.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".35" stroke-width="1"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified Persuasion</span>
   <nav><a href="https://github.com/yashsharmahere/verified-persuasion">GitHub ↗</a></nav>
@@ -11,59 +11,150 @@
 <main style="gap:0">
 
 <section class="hero">
+  <div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="hero-copy">
     <span class="label">A research project</span>
-    <h1>An AI that argues only with what it can prove.</h1>
+    <h1>An AI that argues only with what it can <span class="squiggle">prove.<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 14 C 40 4, 70 18, 105 9 S 170 5, 197 12"/></svg></span></h1>
     <p class="lead">It tries to change one person's mind about one everyday belief. Every fact it wants to say is checked against a real, human-verified source first. If it can't back a fact up, it doesn't say it.</p>
     <div class="row">
-      <a class="button" href="#how">How it works</a>
-      <a class="button secondary" href="https://github.com/yashsharmahere/verified-persuasion">See the code</a>
+      <a class="button" href="#game">Play the checker</a>
+      <a class="button secondary" href="#how">How it works</a>
     </div>
   </div>
-  <div class="mock" aria-label="Example of a checked reply">
-    <span class="label">Example</span>
-    <div class="msg me"><span class="who">You</span><div class="bubble">I'm 64 and I eat exactly what I ate at 30. Why change?</div></div>
-    <div class="blocked"><span class="x">✕</span><span><b>Blocked before sending:</b> "Less salt will cure high blood pressure." The source says salt and blood pressure are <i>linked</i>, never that cutting it <i>cures</i>.</span></div>
-    <div class="msg sys"><span class="who"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>AI assistant</span>
+
+  <div class="mock story" id="story" aria-label="Animated example: a claim is blocked, then a checked reply is sent">
+    <div class="mock-head"><span class="label">Example</span><button class="replay" id="replay" type="button" aria-label="Replay the example">↻ Replay</button></div>
+    <div class="msg me s1"><span class="who">You</span><div class="bubble">I'm 64 and I eat exactly what I ate at 30. Why change?</div></div>
+    <div class="stage s2"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="stage-text">The AI writes a draft, then every fact is checked…</span></div>
+    <div class="claims s3">
+      <div class="claim ok"><span class="mk">✓</span><span>"Older people need fewer calories."<small>Backed: "An elderly person needs fewer calories…"</small></span></div>
+      <div class="claim no"><span class="mk">✕</span><span>"Less salt will <b>cure</b> high blood pressure."<small>Blocked: the source says <i>linked</i>, never <i>cures</i>.</small></span></div>
+    </div>
+    <div class="msg sys s4"><span class="who"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>AI assistant</span>
       <div class="bubble">India's nutrition guidelines say an elderly person needs fewer calories but more micronutrients than someone in mid-life. Has your appetite changed at all?
-        <div class="sources"><span class="checked"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="var(--accent)"/><path d="M4.6 8.3l2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Every fact checked against</span><span class="source-link">ICMR–NIN Dietary Guidelines 2024</span></div>
+        <div class="sources"><span class="checked stamp"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="var(--accent)"/><path d="M4.6 8.3l2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Every fact checked against</span><span class="source-link">ICMR–NIN Dietary Guidelines 2024</span></div>
       </div>
     </div>
   </div>
 </section>
 
+<div class="band" id="game">
+  <div class="inner">
+    <div class="section-head reveal">
+      <span class="label">Your turn</span>
+      <h2>Be the checker</h2>
+      <p>This is the job the AI checker does on every sentence. Read the source, then decide: does it really back each claim?</p>
+    </div>
+    <div class="game reveal">
+      <figure class="source-card">
+        <span class="label">The source</span>
+        <blockquote>“There is a strong association between salt intake and blood pressure.” <br>“An elderly person needs fewer calories but more micronutrients than someone in mid-life.”</blockquote>
+        <figcaption>ICMR–National Institute of Nutrition, Dietary Guidelines for Indians 2024</figcaption>
+      </figure>
+      <div class="rounds" id="rounds"></div>
+      <div class="score" id="score" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
 <section class="section" id="how">
-  <div class="section-head">
+  <div class="section-head reveal">
     <span class="label">How it works</span>
     <h2>What happens to every reply</h2>
     <p>AI models sometimes make things up and still sound sure. So nothing the AI writes goes straight to the person. It passes a checkpoint first.</p>
   </div>
-  <ol class="steps">
+  <ol class="steps reveal-stagger">
     <li><h3>Write</h3><p>An AI drafts a reply, using only quotes a person has checked against the original source.</p></li>
     <li><h3>Cut</h3><p>A second AI splits the reply into single pieces: facts, questions and feelings.</p></li>
     <li class="gate"><h3>Check</h3><p>A third AI asks of every fact: does a quote actually <i>say</i> this, not just talk about it?</p></li>
     <li class="gate"><h3>Send or rewrite</h3><p>Every fact passes: it's sent, with sources named. Any fact fails: it's rewritten. Fails twice: the AI says it can't back that up.</p></li>
   </ol>
-  <p class="gate-note"><i></i>Filled steps are the checkpoint. Every fact is logged, sent or blocked.</p>
+  <p class="gate-note reveal"><i></i>Filled steps are the checkpoint. Every fact is logged, sent or blocked.</p>
 </section>
 
 <div class="band">
   <div class="inner">
-    <div class="section-head">
+    <div class="section-head reveal">
       <span class="label">The experiment</span>
       <h2>How we know if it worked</h2>
       <p>The participant rates the belief from 0 to 100, four times.</p>
     </div>
-    <div class="measures">
+    <div class="measures reveal-stagger">
       <div><span class="when">Day 0</span><b>Before</b><span>Before hearing any argument.</span></div>
       <div><span class="when">Then</span><b>Brochure</b><span>After reading the fixed page of quotes.</span></div>
       <div><span class="when">Then</span><b>Conversation</b><span>After talking with the AI.</span></div>
       <div><span class="when">Day 7</span><b>A week later</b><span>Did the change last?</span></div>
     </div>
-    <p class="callout">If the brochure moves the belief as much as the conversation, the conversation added nothing, and the study says so. Unsupported facts that reached the participant are counted. The target is zero.</p>
+    <p class="callout reveal">If the brochure moves the belief as much as the conversation, the conversation added nothing, and the study says so. Unsupported facts that reached the participant are counted. The target is zero.</p>
   </div>
 </div>
 
 </main>
 <footer class="site"><span>Real participants reach this site through a personal link. There is nothing to sign up for here.</span><span>A 100xEngineers capstone · <a href="https://github.com/yashsharmahere/verified-persuasion">Code</a></span></footer>
+
+<script>
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// The example plays as a short story. Without motion (or JS) it shows its finished state.
+const story = document.getElementById('story');
+let timers = [];
+function play() {
+  if (calm) return;
+  timers.forEach(clearTimeout);
+  story.classList.add('playing');
+  story.dataset.step = '0';
+  [600, 1700, 3400, 5600].forEach((t, i) => timers.push(setTimeout(() => (story.dataset.step = String(i + 1)), t)));
+  timers.push(setTimeout(() => story.classList.remove('playing'), 7000));
+}
+document.getElementById('replay').addEventListener('click', play);
+if (!calm) {
+  new IntersectionObserver((entries, o) => {
+    if (entries.some((e) => e.isIntersecting)) { play(); o.disconnect(); }
+  }, { threshold: 0.4 }).observe(story);
+}
+
+// Scroll reveals: visible by default, only hidden once we know we can reveal them.
+if (!calm && 'IntersectionObserver' in window) {
+  document.documentElement.classList.add('can-reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach((el) => io.observe(el));
+}
+
+// The game: four claims against the two quotes above.
+const claims = [
+  { text: 'Salt and blood pressure are linked.', backed: true, why: 'The source says there is a strong association. That is a link.' },
+  { text: 'Eating less salt cures high blood pressure.', backed: false, why: '"Associated" is not "cures". Turning a link into a cause is the classic slip.' },
+  { text: 'Older people need fewer calories than in mid-life.', backed: true, why: 'Said almost word for word.' },
+  { text: 'Older people need less of every kind of food.', backed: false, why: 'The source says fewer calories but MORE micronutrients. "Less of everything" goes too far.' },
+];
+const rounds = document.getElementById('rounds');
+const score = document.getElementById('score');
+let right = 0, answered = 0;
+claims.forEach((c, i) => {
+  const row = document.createElement('div');
+  row.className = 'round';
+  row.innerHTML = `<p class="round-claim">“${c.text}”</p>
+    <div class="choices"><button type="button" class="chip-btn" data-v="1">Backed ✓</button><button type="button" class="chip-btn" data-v="0">Not backed ✕</button></div>
+    <p class="why" hidden></p>`;
+  row.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    if (row.classList.contains('done')) return;
+    const ok = (b.dataset.v === '1') === c.backed;
+    row.classList.add('done', ok ? 'right' : 'wrong');
+    b.classList.add('picked');
+    const why = row.querySelector('.why');
+    why.textContent = (ok ? 'Right. ' : 'Not quite: this one is ' + (c.backed ? 'backed. ' : 'not backed. ')) + c.why;
+    why.hidden = false;
+    answered++; if (ok) right++;
+    if (answered === claims.length) {
+      score.textContent = right === claims.length
+        ? `4 out of 4. You'd make a good gate.`
+        : `${right} out of 4. The checker has to get these right every time, which is why it's tested on cases like these.`;
+      score.classList.add('show');
+    }
+  }));
+  rounds.append(row);
+});
+</script>
 </body></html>

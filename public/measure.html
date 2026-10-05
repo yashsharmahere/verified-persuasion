@@ -20,7 +20,27 @@ const status = document.getElementById('status');
 const tp = params.get('tp') || '';
 
 function thanks(title, text) {
-  return el('div', { class: 'done-card' }, el('h2', {}, title), el('p', {}, text));
+  const card = el('div', { class: 'done-card' });
+  card.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="var(--accent)"/><path d="M14 25l7 7 13-15" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  card.append(el('h2', {}, title), el('p', {}, text));
+  return card;
+}
+
+// How many questions have an answer. It counts answers, never looks at them,
+// so it cannot nudge anyone toward a number.
+function trackProgress() {
+  const inputs = [...form.querySelectorAll('input[type=number]')];
+  const fill = el('i', { class: 'fill' });
+  const text = el('span', {});
+  const bar = el('div', { class: 'progress', 'aria-live': 'polite' }, el('span', { class: 'track' }, fill), text);
+  form.before(bar);
+  const update = () => {
+    const n = inputs.filter((i) => i.value.trim() !== '').length;
+    fill.style.width = (100 * n / inputs.length) + '%';
+    text.textContent = n + ' of ' + inputs.length + ' answered';
+  };
+  form.addEventListener('input', update);
+  update();
 }
 
 (async () => {
@@ -30,7 +50,7 @@ function thanks(title, text) {
     status.replaceChildren();
     if (d.submitted) { form.replaceWith(thanks('Already recorded', 'Your answers are already recorded. Thank you.')); return; }
     d.items.forEach((it, i) => {
-      form.append(el('div', { class: 'item' },
+      form.append(el('div', { class: 'item', style: 'animation-delay:' + (i * 0.06) + 's' },
         el('label', { for: 'q' + it.key }, it.text),
         el('div', { class: 'num' },
           el('input', { type: 'number', id: 'q' + it.key, name: String(it.key), min: '0', max: '100', step: '1', required: '', inputmode: 'numeric', 'aria-describedby': 'hint' + i }),
@@ -45,6 +65,7 @@ function thanks(title, text) {
         el('input', { type: 'text', id: 'by' })));
     }
     form.append(el('div', { class: 'row' }, el('button', { type: 'submit', id: 'submit' }, 'Submit answers')));
+    trackProgress();
   } catch (err) { showError(status, err); }
 })();
 
@@ -61,6 +82,7 @@ form.addEventListener('submit', async (e) => {
       open_response: document.getElementById('open').value,
       collected_by: by ? by.value : null,
     }) });
+    document.querySelector('.progress')?.remove();
     form.replaceWith(thanks('Thank you', 'Thank you — your answers are recorded.'));
     status.replaceChildren();
     window.scrollTo({ top: 0, behavior: 'smooth' });
