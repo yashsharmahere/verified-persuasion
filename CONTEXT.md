@@ -209,6 +209,25 @@ predicts this is safe: persuasion barely moved with model size. The
 drafter call also sends `fallbacks: "default"`, so a safety-classifier
 decline retries on another model instead of failing the turn.
 
+**Two free savings, and one that wasn't** (2026-10-05):
+- *Verdict memo.* Within one gate run the passages are fixed, so a claim's
+  verdict cannot change; each claim text is judged once, and a redraft that
+  repeats a claim reuses its verdict. Failed judge calls are not remembered.
+  Exact by construction; tested.
+- *Drafter prompt caching.* Instructions, reasons and sources are cached, as
+  is the history (each turn extends the last). In the dry run about 7,000
+  tokens were read from cache: roughly 18% less per drafting call.
+- *Judge caching did nothing.* Instructions plus passages come to just under
+  Sonnet 4.5's 1,024-token minimum, so nothing was cached. Removed.
+- *And it broke the judge first.* Moving the passages from the user message
+  into the system prompt, to cache them, made the same words score 6/8 on
+  `gate:judge` (two critical misses). Moved back: 8/8. One run each; the
+  lesson stands either way: re-run the harness after ANY change to the
+  judge's prompt, even one that changes no words.
+- *Run-to-run spread is larger than these savings.* The same dry run cost
+  $0.135 with one redraft and $0.165 with two. What a conversation costs
+  depends mostly on how often the drafter overreaches.
+
 **3. Which parts need a model, and which are a lookup?** Reason intake is
 human. Retrieval is a lookup (verified, whitelisted, ranked by his reasons).
 Drafting is a model. Decomposing and judging are models. Send / redraft /

@@ -267,6 +267,34 @@ test('one bad claim among many still blocks the turn', async () => {
   assert.equal(result.verdicts.filter((v) => !v.supported).length, 1);
 });
 
+test('a redraft does not re-judge a claim it repeats', async () => {
+  const judgedClaims: string[] = [];
+  const judge: Judge = async (claim, ps) => {
+    judgedClaims.push(claim);
+    return claim.includes('Bad') ? { supported: false, reason: 'no' } : { supported: true, passageId: ps[0]!.id };
+  };
+  const drafts = ['Good claim. Bad claim.', 'Good claim. Other claim.'];
+  let n = 0;
+  const result = await runGate(async () => drafts[n++]!, P, { decompose: naiveDecompose, judge });
+
+  assert.equal(result.refused, false);
+  assert.deepEqual(judgedClaims, ['Good claim', 'Bad claim', 'Other claim'], '"Good claim" is judged once');
+});
+
+test('a judge call that failed is retried on the redraft, not remembered', async () => {
+  let calls = 0;
+  const judge: Judge = async (_claim, ps) => {
+    calls++;
+    if (calls === 1) throw new Error('rate limited');
+    return { supported: true, passageId: ps[0]!.id };
+  };
+  const result = await runGate(async () => 'Same claim.', P, { decompose: naiveDecompose, judge });
+
+  assert.equal(result.refused, false, 'the second attempt judges it afresh and passes');
+  assert.equal(result.redraftCount, 1);
+  assert.equal(calls, 2);
+});
+
 // ------------------------------------------------------------------ helpers
 
 test('feedback names every unsupported claim and forbids hedging', async () => {

@@ -45,8 +45,22 @@ export async function runGate(
   deps: GateDeps = {},
 ): Promise<GateResult> {
   const decomposeFn = deps.decompose ?? modelDecompose;
-  const judge = deps.judge ?? modelJudge;
   const maxRedrafts = deps.maxRedrafts ?? MAX_REDRAFTS;
+
+  // A redraft usually repeats most of the previous draft's claims. The passages
+  // are fixed for the whole run, so a claim's verdict cannot change: judge each
+  // claim text once. A judge call that fails is forgotten, so it is retried.
+  const baseJudge = deps.judge ?? modelJudge;
+  const judged = new Map<string, ReturnType<Judge>>();
+  const judge: Judge = (claim, ps) => {
+    let verdict = judged.get(claim);
+    if (!verdict) {
+      verdict = baseJudge(claim, ps);
+      judged.set(claim, verdict);
+      verdict.catch(() => judged.delete(claim));
+    }
+    return verdict;
+  };
 
   let feedback: string | null = null;
   let lastDraft = '';

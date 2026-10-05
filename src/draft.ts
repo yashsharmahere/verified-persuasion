@@ -89,13 +89,29 @@ export const modelDraft: Drafter = async (input) => {
   const messages = dropLeadingAssistant(input.history);
   if (messages.length === 0) throw new Error('draft: no participant message to answer');
 
+  // Caching: the instructions, reasons and sources are the same on every turn
+  // and redraft, and each turn's history extends the last one, so both are
+  // cached and re-read at a tenth of the price. The gate's feedback is the only
+  // part that changes on a redraft, so it goes after the cached prefix.
+  const full = buildDraftSystemPrompt(input);
+  const stable = buildDraftSystemPrompt({ ...input, feedback: null });
+  const feedback = full.slice(stable.length).trim();
+  const system: Anthropic.Beta.BetaTextBlockParam[] = [
+    { type: 'text', text: stable, cache_control: { type: 'ephemeral' } },
+    ...(feedback ? [{ type: 'text' as const, text: feedback }] : []),
+  ];
+  const last = messages.length - 1;
+  const cachedMessages: Anthropic.Beta.BetaMessageParam[] = messages.map((m, i) =>
+    i === last ? { role: m.role, content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }] } : m,
+  );
+
   // If a safety classifier declines, the API retries on a fallback model in the
   // same call rather than leaving the participant with an error.
   const res = await anthropic.beta.messages.create({
     model: DRAFT_MODEL,
     max_tokens: 4000,
-    system: buildDraftSystemPrompt(input),
-    messages,
+    system,
+    messages: cachedMessages,
     betas: ['server-side-fallback-2026-07-01'],
     // Not in this SDK version's types yet; sent as-is.
     ...({ fallbacks: 'default' } as object),

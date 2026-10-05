@@ -108,6 +108,17 @@ notice"), the gate made it redraft five times, and checking those redrafts
 ate the saving. A drafter's cost includes the checking it causes. This also
 fits the brief's observation that persuasion barely moved with model size.
 
+**Free savings, measured.** A redraft no longer re-judges claims it repeats
+(the passages are fixed within a turn, so the verdict cannot change). The
+drafter's instructions, sources and history are cached, about 18% less per
+drafting call. Caching the judge's passages saved nothing: the prefix was
+under the model's caching minimum. Worse, moving the passages into the
+judge's system prompt to make them cacheable dropped `gate:judge` from 8/8
+to 6/8 with the same words, so it was reverted. Any change to the judge's
+prompt, even layout, gets the harness re-run. The biggest remaining cost
+driver is not a setting: it is how often the drafter overreaches and has to
+be redrafted ($0.135 with one redraft, $0.165 with two, same dry run).
+
 **Checking a hundred cheaply.** The first judge checked a claim against
 each passage in turn: up to one model call per passage, one after another.
 It now makes one call per claim with every passage numbered, and must name
@@ -307,3 +318,7 @@ Dated, in order. Each line is something learned, and where it is written up.
 - **2026-10-05** Drafter trial: Sonnet 5.5 about 40% cheaper than Opus 5.5
   with no loss of quality; Haiku 4.5 no cheaper overall because the gate
   redrafted its loose claims. Drafter moved to Sonnet 5.5. (§2)
+- **2026-10-05** Verdict memo across redrafts, and drafter prompt caching
+  (~18% per drafting call). Judge caching saved nothing (below the minimum)
+  and, moving the passages into the system prompt, dropped `gate:judge` to
+  6/8. Reverted to 8/8. (§2)
