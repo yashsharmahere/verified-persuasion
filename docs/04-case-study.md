@@ -214,7 +214,7 @@ the hypothesis.
 
 ## 5. Product quality
 
-- Live: https://verified-persuasion-app.vercel.app. The homepage explains the
+- Live: https://canyoubeconvinced.vercel.app. The homepage explains the
   system with a labelled example of a claim being blocked.
 - A public demo was built (made-up belief, a stand-in model that only quotes
   passages, one in-memory copy per visitor) and then removed. The stand-in

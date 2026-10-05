@@ -124,7 +124,7 @@ counts only what reached him: that should be 0. The gap is the gate's work.
 
 ### Deployed
 
-Live at https://verified-persuasion-app.vercel.app (Vercel project
+Live at https://canyoubeconvinced.vercel.app (Vercel project
 `verified-persuasion-app`, team `yash-sh-projects`; pushes to `main` deploy to
 production). Env vars set: `ANTHROPIC_API_KEY`, `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `BASE_URL`.
@@ -409,7 +409,7 @@ it, and reporting it honestly is a graded criterion.
 
 ## Deliverables (submission template)
 
-1. Live project link — https://verified-persuasion-app.vercel.app (explainer live; real run pending)
+1. Live project link — https://canyoubeconvinced.vercel.app (explainer live; real run pending)
 2. GitHub repo — this
 3. Demo video — not started
 4. Case study — not started

@@ -18,7 +18,7 @@ whether you can keep the persuasion and drop the made-up part."
 
 ### 2. What the participant sees (0:30–1:15)
 
-**Screen:** https://verified-persuasion-app.vercel.app → *The conversation*.
+**Screen:** https://canyoubeconvinced.vercel.app → *The conversation*.
 Type a reply; show the answer with its "Sources:" line; click the source link.
 **Say:** "Every fact in a reply was checked against a quote a person verified,
 and the source is named underneath. The robot tells him up front that it's a
