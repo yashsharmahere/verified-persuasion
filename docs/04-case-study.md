@@ -359,3 +359,8 @@ Dated, in order. Each line is something learned, and where it is written up.
   round when fewer than five quotes verify (three made the AI repeat itself),
   and the opening now starts from the reason they gave instead of asking
   for it again; the drafter now sees that opening. (§2, §4, §5)
+- **2026-10-05** Chat made easier to read: paragraphs, a source's exact words
+  highlighted (only where the source is named), source names in bold, built
+  from text nodes so model output is never parsed as HTML. Health sources
+  widened to AIIMS, Mayo Clinic, Harvard, Johns Hopkins and Cleveland Clinic:
+  in the pilot the participant said they trust "medical experts". (§5)

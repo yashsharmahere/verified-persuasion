@@ -32,6 +32,8 @@ export const SOURCE_LISTS: Record<Topic, string[]> = {
   health: [
     'who.int', 'nin.res.in', 'icmr.gov.in', 'mohfw.gov.in', 'fssai.gov.in', 'nih.gov', 'ncbi.nlm.nih.gov', 'cdc.gov',
     'fda.gov', 'nhs.uk', 'nice.org.uk', 'efsa.europa.eu', 'diabetes.org', 'cancer.gov', 'medlineplus.gov', 'nia.nih.gov',
+    // Medical schools and hospitals: what someone who trusts "a medical expert" recognises.
+    'aiims.edu', 'mayoclinic.org', 'health.harvard.edu', 'hsph.harvard.edu', 'hopkinsmedicine.org', 'clevelandclinic.org',
   ],
   technology: [
     'apple.com', 'samsung.com', 'google.com', 'android.com', 'microsoft.com', 'ieee.org', 'nist.gov', 'energy.gov',

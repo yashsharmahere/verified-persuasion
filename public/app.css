@@ -479,3 +479,14 @@ footer.site { font-family: var(--mono); font-size: .78rem; }
 /* Google button: white, as Google's guidelines ask */
 button.google { gap: 12px; justify-self: start; }
 button.google svg { flex: none; }
+
+/* the AI's replies: paragraphs, quoted source words, source names */
+.msg .bubble p + p { margin-top: .75em; }
+.msg.sys .bubble { line-height: 1.6; }
+.msg q.said { quotes: "“" "”"; background: #fff1cf; box-shadow: 0 0 0 2px #fff1cf; border-radius: 3px; font-style: italic; }
+.msg q.their { quotes: "“" "”"; font-style: italic; }
+.msg b.src-name { font-weight: 700; color: var(--ink); }
+.msg .sources { counter-reset: none; }
+.msg .sources .source-link { display: inline-flex; align-items: center; font: 500 .8rem/1.2 var(--mono); padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); text-decoration: none; }
+.msg .sources .source-link::after { content: "↗"; margin-left: 6px; color: var(--muted); }
+.msg .sources .source-link:hover { border-color: var(--ink); color: var(--ink); }
