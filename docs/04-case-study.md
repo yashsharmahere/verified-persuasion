@@ -99,6 +99,15 @@ the same cases ($0.016 against $0.014). The cheaper-looking model was not
 the cheaper judge. What made checking cheap was fewer calls, not a cheaper
 model.
 
+**The drafter, by contrast, could be cheaper.** The same dry run with three
+drafters (judge unchanged): Opus 5.5 cost $0.222, Sonnet 5.5 $0.135, Haiku
+4.5 $0.218. Sonnet 5.5 is about 40% cheaper with replies as good. Haiku is
+the trap: its own calls cost a fifth of Opus's, but it wrote looser claims
+("the science shows…", "your body is changing in ways you might not
+notice"), the gate made it redraft five times, and checking those redrafts
+ate the saving. A drafter's cost includes the checking it causes. This also
+fits the brief's observation that persuasion barely moved with model size.
+
 **Checking a hundred cheaply.** The first judge checked a claim against
 each passage in turn: up to one model call per passage, one after another.
 It now makes one call per claim with every passage numbered, and must name
@@ -295,3 +304,6 @@ Dated, in order. Each line is something learned, and where it is written up.
   `dropped-qualifier`. Judge kept on Sonnet 4.5. (§2)
 - **2026-10-05** Sonnet 5.5 as judge: 8/8, but about 10% more per check
   (more tokens for the same text). Judge kept on Sonnet 4.5. (§2)
+- **2026-10-05** Drafter trial: Sonnet 5.5 about 40% cheaper than Opus 5.5
+  with no loss of quality; Haiku 4.5 no cheaper overall because the gate
+  redrafted its loose claims. Drafter moved to Sonnet 5.5. (§2)

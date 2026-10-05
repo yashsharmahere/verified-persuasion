@@ -192,6 +192,23 @@ calls per claim. Measured: `gate:judge` 8/8 at about 1.6 s per claim; a
 dry run of 4 turns plus a reversal cost $0.22 (31 Sonnet 4.5 calls for
 splitting and judging, 6 Opus 5.5 calls for drafting), about $0.04 a turn.
 
+**The drafter moved to Sonnet 5.5** (2026-10-05). Same dry run, three
+drafters, judge unchanged:
+
+| Drafter | Drafting | Splitting + judging | Total | Redrafts |
+| --- | --- | --- | --- | --- |
+| Opus 5.5 | $0.092 | $0.130 | $0.222 | 0 |
+| Sonnet 5.5 | $0.044 | $0.091 | **$0.135** | 1 |
+| Haiku 4.5 | $0.018 | $0.200 | $0.218 | 5 |
+
+Sonnet 5.5 is about 40% cheaper per turn with replies as good, roughly
+₹2.3 a turn at ₹84 to the dollar. Haiku drafts cheaply but loosely ("the
+science shows…"), and the gate's redrafts cost more than the drafting
+saved: the cost of a drafter includes the checking it causes. The brief
+predicts this is safe: persuasion barely moved with model size. The
+drafter call also sends `fallbacks: "default"`, so a safety-classifier
+decline retries on another model instead of failing the turn.
+
 **3. Which parts need a model, and which are a lookup?** Reason intake is
 human. Retrieval is a lookup (verified, whitelisted, ranked by his reasons).
 Drafting is a model. Decomposing and judging are models. Send / redraft /

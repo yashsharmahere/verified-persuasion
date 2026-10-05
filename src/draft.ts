@@ -13,7 +13,12 @@ import type { Reason } from './store.js';
  * Nothing here names a belief or a topic. All of it arrives as data.
  */
 
-export const DRAFT_MODEL = process.env.DRAFT_MODEL ?? 'claude-opus-5-5';
+/**
+ * Sonnet 5.5, not Opus 5.5: in a 2026-10-05 dry run it cost about 40% less per
+ * turn overall with no loss of quality. Haiku 4.5 was cheaper to draft with but
+ * wrote looser claims, so the gate redrafted it into the same total cost.
+ */
+export const DRAFT_MODEL = process.env.DRAFT_MODEL ?? 'claude-sonnet-5-5';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -84,16 +89,21 @@ export const modelDraft: Drafter = async (input) => {
   const messages = dropLeadingAssistant(input.history);
   if (messages.length === 0) throw new Error('draft: no participant message to answer');
 
-  const res = await anthropic.messages.create({
+  // If a safety classifier declines, the API retries on a fallback model in the
+  // same call rather than leaving the participant with an error.
+  const res = await anthropic.beta.messages.create({
     model: DRAFT_MODEL,
     max_tokens: 4000,
     system: buildDraftSystemPrompt(input),
     messages,
-  });
+    betas: ['server-side-fallback-2026-07-01'],
+    // Not in this SDK version's types yet; sent as-is.
+    ...({ fallbacks: 'default' } as object),
+  } as Anthropic.Beta.MessageCreateParamsNonStreaming);
 
   if (res.stop_reason === 'refusal') throw new Error('draft: model declined to answer');
   const text = res.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
     .map((b) => b.text)
     .join('')
     .trim();
