@@ -14,6 +14,12 @@ export interface Passage {
   quote: string;
   human_verified: boolean;
   applies_to: string | null;
+  /**
+   * How it was verified. 'human': a person checked it against the source.
+   * 'exact_match': the server downloaded the source and found the quote in it,
+   * word for word. Absent means 'human'.
+   */
+  verification?: 'human' | 'exact_match';
 }
 
 /** One atomic claim pulled out of a drafted turn. */

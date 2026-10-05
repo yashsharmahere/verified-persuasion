@@ -49,11 +49,19 @@ export function selectPassages(
 /** Rules 1 and 2 only: verified, and from a whitelisted domain. No reason-matching. */
 export function eligiblePassages(passages: Passage[], whitelist: string[]): Passage[] {
   const allowed = new Set(whitelist.map((d) => d.toLowerCase()));
-  return passages.filter((p) => p.human_verified === true && domainAllowed(p.source_domain, allowed));
+  return passages.filter((p) => isVerified(p) && domainAllowed(p.source_domain, allowed));
+}
+
+/**
+ * Checked by a person, or found word for word in the downloaded source by the
+ * server. Both prove the quote exists as written; nothing else counts.
+ */
+export function isVerified(p: Passage): boolean {
+  return p.human_verified === true || p.verification === 'exact_match';
 }
 
 /** "www.espen.org" is allowed by "espen.org"; "notespen.org" is not. */
-function domainAllowed(domain: string, allowed: Set<string>): boolean {
+export function domainAllowed(domain: string, allowed: Set<string>): boolean {
   const d = domain.toLowerCase();
   for (const a of allowed) {
     if (d === a || d.endsWith(`.${a}`)) return true;

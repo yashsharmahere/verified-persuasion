@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/gate-logic.test.ts test/app.test.ts",
+    "test": "tsx --test test/gate-logic.test.ts test/app.test.ts test/journey.test.ts",
     "gate:judge": "tsx test/gate-judge.test.ts",
     "dev": "tsx scripts/dev-server.ts",
     "intake:load": "tsx scripts/intake-load.ts",
@@ -19,11 +19,12 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "@supabase/supabase-js": "^2.45.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "unpdf": "^1.8.1"
   },
   "devDependencies": {
+    "@types/node": "^22.7.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "@types/node": "^22.7.0"
+    "typescript": "^5.6.0"
   }
 }

@@ -38,7 +38,7 @@ const brand = el('a', { class: 'brand', href: isDemo ? '/' : '#' });
 brand.innerHTML = BRAND_SVG + '<span>Verified Persuasion</span>';
 if (!isDemo) brand.removeAttribute('href');
 topbar.append(brand, el('span', { class: 'muted tagline' }, 'Every fact is checked against its source'));
-document.body.prepend(topbar);
+if (!document.querySelector('.topbar')) document.body.prepend(topbar);
 
 // A "working on it" bubble with animated dots.
 function thinking(text) {
