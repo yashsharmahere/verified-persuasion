@@ -124,7 +124,7 @@ counts only what reached him: that should be 0. The gap is the gate's work.
 
 ### Deployed
 
-Live at https://verified-persuasion-app.vercel.app (Vercel project
+Live at https://canyoubeconvinced.vercel.app (Vercel project
 `verified-persuasion-app`, team `yash-sh-projects`; pushes to `main` deploy to
 production). Env vars set: `ANTHROPIC_API_KEY`, `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `BASE_URL`.
@@ -137,14 +137,20 @@ looked broken. A real-model demo, with a spend cap, can come back after
 
 ### Self-serve journey (2026-10-05)
 
-`/start.html`: log in by email (Supabase Auth, magic link, allow-listed by the
-`ALLOWED_EMAILS` env var; only Dad during the pilot), consent, type a belief
+`/start.html`: open to anyone with a Google account (Supabase Auth, Google
+provider). Before 2026-10-05 it was an emailed magic link with an allow-list
+(Dad only); a no-login version with a private link was built and replaced
+the same day, because a lost link loses the day-7 answer. Logging in is what
+lets someone come back on any device on day 7. New beliefs are capped at
+`MAX_NEW_BELIEFS_PER_DAY` across everyone (default 20; new participants at
+3×), because each one costs a sourcing search and a reversal run. Then: type a belief
 (a model restates it as one rateable sentence and turns away political,
 identity and own-treatment beliefs), answer the intake questions on screen,
 rate it 0–100 with four controls. Then `prepare`:
 
-1. A model searches a fixed list of trusted sites (`TRUSTED_DOMAINS`) and
-   proposes quotes.
+1. A model searches a fixed list of trusted sites for the belief's topic
+   (`SOURCE_LISTS`: health, technology, money, safety, science; the topic is
+   chosen when the belief is shaped and stored on it) and proposes quotes.
 2. **The server downloads each page and keeps a quote only if it finds it
    word for word** (`verification = 'exact_match'`). This replaces "a person
    opened the source" with "the server opened the source". It proves the quote
@@ -164,6 +170,20 @@ same as at 30, and nothing bad will happen to your health" and declined a
 political belief and a "my BP tablets are useless" belief. Sourcing took
 50 s and proposed 7 quotes, all from one page, so the prompt now asks for at
 least three organisations, Indian national bodies included.
+
+First user test (Yash, "charging my phone overnight ruins the battery or
+might make it explode") ended in `no_sources` with nothing proposed at all.
+Two causes, both fixed: the only list was health sites, and the model was
+told to "search only the allowed sites" without being told which they were
+(the tools enforce `allowed_domains` but the model can't see it), so it
+returned an empty list. With per-topic lists and the sites named in the
+message it proposed 5–6 quotes from Apple support and Battery University.
+The download check can't be run from the dev container (its proxy refuses
+those hosts); it runs on Vercel. Also from that test: the doctor question is
+asked only for health beliefs (others get "Has an expert or professional
+ever told you anything about this?"), and `no_sources` now offers "Try a
+different belief", which deletes the belief and its answers. The four
+control statements looking unrelated is by design: they are decoys.
 
 ### Not done, not blocked
 
@@ -389,7 +409,7 @@ it, and reporting it honestly is a graded criterion.
 
 ## Deliverables (submission template)
 
-1. Live project link — https://verified-persuasion-app.vercel.app (explainer live; real run pending)
+1. Live project link — https://canyoubeconvinced.vercel.app (explainer live; real run pending)
 2. GitHub repo — this
 3. Demo video — not started
 4. Case study — not started

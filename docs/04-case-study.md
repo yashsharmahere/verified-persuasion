@@ -214,7 +214,7 @@ the hypothesis.
 
 ## 5. Product quality
 
-- Live: https://verified-persuasion-app.vercel.app. The homepage explains the
+- Live: https://canyoubeconvinced.vercel.app. The homepage explains the
   system with a labelled example of a claim being blocked.
 - A public demo was built (made-up belief, a stand-in model that only quotes
   passages, one in-memory copy per visitor) and then removed. The stand-in
@@ -327,3 +327,16 @@ Dated, in order. Each line is something learned, and where it is written up.
   quotes is replaced by the server downloading each source and keeping a
   quote only on an exact match. What that does and doesn't prove belongs in
   §2. (CONTEXT.md)
+- **2026-10-05** First user test of the self-serve journey (a phone-battery
+  belief) ended with "not enough trusted sources" and zero candidates. The
+  site list was health-only, and the model, told to search "the allowed
+  sites" without being shown them, returned nothing. Fixed with per-topic
+  site lists named in the prompt: 5–6 candidates from Apple and Battery
+  University. The system failed closed, as designed, but a dead end with
+  no way forward is a product failure: added "Try a different belief", and
+  the doctor question now appears only for health beliefs. (§2, §5)
+- **2026-10-05** Opened to anyone. Tried no login (a private link to return
+  on day 7), then switched to Google login the same day: a lost link loses
+  the day-7 answer, a Google account doesn't. A daily cap on new beliefs
+  bounds the cost of an open site. Nothing reminds people to come back on
+  day 7 yet, so expect attrition. (§5)

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { isTopic, type Topic } from './sourcing.js';
 
 /**
  * Turn what a person typed into one statement they can rate from 0 to 100,
@@ -16,6 +17,8 @@ export interface ShapedBelief {
   statement: string;
   /** A short topic label, e.g. "nutrition", "personal finance". */
   domain: string;
+  /** Which trusted-source list to search. */
+  category: Topic;
   /** When out of scope: why, in one friendly sentence addressed to the person. */
   reason: string;
 }
@@ -26,9 +29,11 @@ export const SHAPE_PROMPT = `A person has typed a belief they hold. You prepare 
 
 Decide if it is in scope. In scope: an everyday factual belief about health, food, money, safety, or similar, that costs the person money, time or health, and that published evidence can speak to. Out of scope: political, religious or identity questions; opinions and matters of taste; claims about a specific named person; questions about the person's own diagnosis, medicines or treatment; anything you cannot restate as a single checkable claim.
 
+Category picks which trusted sites are searched: health (food, diet, medicine, the body), technology (phones, computers, gadgets, batteries), money (saving, investing, tax, insurance, banking), safety (fire, electricity, roads, home, disasters), science (weather, environment, space, anything else).
+
 If in scope, restate it as ONE plain sentence in the person's own terms that they could rate from 0 (definitely false) to 100 (definitely true). Keep their meaning, including how strong it is; do not soften it, correct it or make it more reasonable. No "I believe".
 
-Return JSON only: {"in_scope": true|false, "statement": "...", "domain": "one or two words", "reason": "if out of scope, one friendly sentence to the person saying why; else empty"}`;
+Return JSON only: {"in_scope": true|false, "statement": "...", "domain": "one or two words", "category": "health" | "technology" | "money" | "safety" | "science", "reason": "if out of scope, one friendly sentence to the person saying why; else empty"}`;
 
 export const SHAPE_MODEL = 'claude-sonnet-5-5';
 
@@ -53,6 +58,7 @@ export function parseShaped(raw: string): ShapedBelief {
     in_scope: false,
     statement: '',
     domain: '',
+    category: 'science',
     reason: "Sorry, I couldn't turn that into a single statement. Could you write it as one sentence?",
   };
   const start = raw.indexOf('{');
@@ -69,6 +75,7 @@ export function parseShaped(raw: string): ShapedBelief {
       in_scope: true,
       statement,
       domain: typeof p.domain === 'string' && p.domain.trim() ? p.domain.trim().slice(0, 40) : 'general',
+      category: isTopic(p.category) ? p.category : 'science',
       reason: '',
     };
   } catch {

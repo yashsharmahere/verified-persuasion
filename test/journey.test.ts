@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { createHandler } from '../src/http.js';
 import { createJourneyHandler, stageOf, type JourneyDeps } from '../src/journey/handler.js';
 import { parseShaped } from '../src/journey/shape.js';
-import { normalizeForMatch, parseCandidates, quoteFoundIn, verifyCandidates } from '../src/journey/sourcing.js';
+import { normalizeForMatch, parseCandidates, quoteFoundIn, SOURCE_LISTS, verifyCandidates } from '../src/journey/sourcing.js';
 import { memoryStore } from '../src/store.js';
 
 // ------------------------------------------------------------------ stageOf
@@ -68,7 +68,7 @@ test('only trusted, https, findable quotes are kept, each marked exact_match', a
     { source_name: 'Blog', url: 'https://notwho.int/a', quote: 'Reducing salt intake is one of the most cost-effective ways.' },
     { source_name: 'WHO', url: 'http://www.who.int/a', quote: 'Reducing salt intake is one of the most cost-effective ways.' },
     { source_name: 'WHO', url: 'https://www.who.int/missing', quote: 'A page that cannot be downloaded at all, so it fails.' },
-  ], fetchText);
+  ], ['who.int'], fetchText);
 
   assert.equal(report.kept.length, 1);
   assert.equal(report.kept[0]!.verification, 'exact_match');
@@ -102,9 +102,9 @@ function setup(over: Partial<JourneyDeps> = {}) {
   const m = memoryStore();
   let clock = new Date('2026-10-05T10:00:00Z');
   const deps: JourneyDeps = {
-    verifyUser: async (t) => (t === 'tok-dad' ? { id: 'user-dad-0001', email: 'dad@example.com' } : t === 'tok-stranger' ? { id: 'user-x', email: 'x@example.com' } : null),
-    isAllowed: (e) => e === 'dad@example.com',
-    shapeBelief: async () => ({ in_scope: true, statement: 'A person over 60 can eat the same as at 30.', domain: 'nutrition', reason: '' }),
+    // Any token "tok-<name>" is a logged-in Google user called <name>.
+    verifyUser: async (t) => (t.startsWith('tok-') ? { id: `user-${t.slice(4)}`, email: `${t.slice(4)}@gmail.com` } : null),
+    shapeBelief: async () => ({ in_scope: true, statement: 'A person over 60 can eat the same as at 30.', domain: 'nutrition', category: 'health', reason: '' }),
     findCandidates: async () => QUOTES.map((quote) => ({ source_name: 'ICMR-NIN', url: 'https://www.nin.res.in/g.pdf', quote })),
     fetchText: async () => QUOTES.join(' '),
     turn: {
@@ -137,13 +137,26 @@ function setup(over: Partial<JourneyDeps> = {}) {
 
 const view = async (r: Response) => (await r.json()) as { stage: string; links: { brochure: string; chat: string } | null; instrument: { key: number }[] | null };
 
-test('no login is a 401; a login not on the allow-list is a 403', async () => {
-  const { call } = setup();
+test('any logged-in person can take part; without a login, nothing', async () => {
+  const { m, call } = setup();
   assert.equal((await call('me', undefined, 'bad')).status, 401);
-  assert.equal((await call('me', undefined, 'tok-stranger')).status, 403);
-  const join = async (email: string) => ((await (await call('can_join', { email }, '')).json()) as { allowed: boolean }).allowed;
-  assert.equal(await join('DAD@example.com '), true);
-  assert.equal(await join('x@example.com'), false);
+  assert.equal((await call('consent', {}, '')).status, 401);
+  assert.equal((await view(await call('me', undefined, 'tok-anyone'))).stage, 'consent', 'no allow-list');
+  assert.equal((await view(await call('consent', {}, 'tok-anyone'))).stage, 'belief');
+  assert.equal((await view(await call('consent', {}, 'tok-anyone'))).stage, 'belief', 'consenting again changes nothing');
+  assert.equal(m.participants.length, 1);
+  assert.equal((await call('belief', { statement: 'Something long enough to count.' }, 'tok-other')).status, 409, 'no steps before consent');
+});
+
+test('an open site has a daily ceiling on new beliefs', async () => {
+  const { call } = setup({ dailyLimit: 1 });
+  await call('consent', {});
+  assert.equal((await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' })).status, 200);
+  // A second person, same day: the ceiling is reached.
+  await call('consent', {}, 'tok-second');
+  const r = await call('belief', { statement: 'Another belief that is long enough.', category: 'health' }, 'tok-second');
+  assert.equal(r.status, 429);
+  assert.match(((await r.json()) as { error: string }).error, /tomorrow/);
 });
 
 test('the whole journey, start to day 7, through the same pages a token link uses', async () => {
@@ -157,7 +170,7 @@ test('the whole journey, start to day 7, through the same pages a token link use
   assert.equal((await step('me')).stage, 'consent');
   assert.equal((await step('consent', {})).stage, 'belief');
   const proposal = (await (await call('propose', { text: 'I can eat everything like when I was young' })).json()) as { statement: string };
-  assert.equal((await step('belief', { statement: proposal.statement, raw_text: 'I can eat everything' })).stage, 'reasons');
+  assert.equal((await step('belief', { statement: proposal.statement, raw_text: 'I can eat everything', category: 'health' })).stage, 'reasons');
   assert.equal((await call('reasons', { answers: { origin: 'my father' } })).status, 400, 'the "why" answer is required');
   const v = await step('reasons', { answers: { why: 'My father ate everything and lived to 90.', doctor: '' } });
   assert.equal(v.stage, 'baseline');
@@ -196,7 +209,7 @@ test('the whole journey, start to day 7, through the same pages a token link use
 test('the reversal test runs automatically, aimed at their own belief, and is logged', async () => {
   const { m, call } = setup();
   await call('consent', {});
-  await call('belief', { statement: 'A person over 60 can eat the same as at 30.' });
+  await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });
   const v = await view(await call('reasons', { answers: { why: 'Because.' } }));
   await call('baseline', { scores: Object.fromEntries(v.instrument!.map((it) => [it.key, 50])) });
   await call('prepare', {});
@@ -207,7 +220,7 @@ test('the reversal test runs automatically, aimed at their own belief, and is lo
 test('with fewer than two verified quotes, the system says so instead of arguing', async () => {
   const { m, call } = setup({ fetchText: async () => 'A page that contains none of the proposed quotes.' });
   await call('consent', {});
-  await call('belief', { statement: 'A person over 60 can eat the same as at 30.' });
+  await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });
   const v = await view(await call('reasons', { answers: { why: 'Because.' } }));
   await call('baseline', { scores: Object.fromEntries(v.instrument!.map((it) => [it.key, 50])) });
   const r = await view(await call('prepare', {}));
@@ -221,6 +234,37 @@ test('steps cannot be skipped or repeated', async () => {
   assert.equal((await call('belief', { statement: 'Something long enough to count.' })).status, 409, 'no belief before consent');
   await call('consent', {});
   assert.equal((await call('reasons', { answers: { why: 'x' } })).status, 409, 'no reasons before a belief');
-  await call('belief', { statement: 'A person over 60 can eat the same as at 30.' });
+  await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });
   assert.equal((await call('belief', { statement: 'A different belief entirely, later.' })).status, 409, 'one belief');
+});
+
+test('each topic searches its own trusted sites, and only health asks about a doctor', async () => {
+  let searched: string[] = [];
+  const { m, call } = setup({
+    findCandidates: async (_s, _r, domains) => ((searched = domains), []),
+  });
+  await call('consent', {});
+  await call('belief', { statement: 'Charging a phone overnight ruins its battery.', category: 'technology' });
+  const v = (await (await call('me')).json()) as { questions: { code: string }[] };
+  assert.ok(!v.questions.some((q) => q.code === 'doctor'));
+  assert.ok(v.questions.some((q) => q.code === 'expert'));
+  const b = await view(await call('reasons', { answers: { why: 'My friend said so.', expert: 'A shop owner.' } }));
+  await call('baseline', { scores: Object.fromEntries(b.instrument!.map((it) => [it.key, 50])) });
+  await call('prepare', {});
+  assert.deepEqual(searched, SOURCE_LISTS.technology);
+  assert.equal(m.reasons.find((r) => r.code === 'expert')?.verbatim, 'A shop owner.');
+  assert.equal(parseShaped('{"in_scope": true, "statement": "Phones explode when charged overnight.", "category": "nonsense"}').category, 'science');
+});
+
+test('after no sources are found, they can start over with a different belief', async () => {
+  const { m, call } = setup({ fetchText: async () => 'Nothing useful here.' });
+  await call('consent', {});
+  assert.equal((await call('restart', {})).status, 409, 'only allowed after no sources');
+  await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });
+  const v = await view(await call('reasons', { answers: { why: 'Because.' } }));
+  await call('baseline', { scores: Object.fromEntries(v.instrument!.map((it) => [it.key, 50])) });
+  assert.equal((await view(await call('prepare', {}))).stage, 'no_sources');
+  assert.equal((await view(await call('restart', {}))).stage, 'belief');
+  assert.equal(m.reasons.length, 0);
+  assert.equal(m.measures.length, 0);
 });

@@ -1,22 +1,31 @@
-/* Light, editorial: a health-journal serif for headings, a low-vision-friendly sans for reading,
-   white pages, one deep green for trust. Participant pages are read by people over 60. */
-@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
+/* Warm and workmanlike: beige paper, heavy tight sans headings, flat bordered
+   panels like little windows, chunky buttons that press in, monospace labels.
+   Participant pages are read by people over 60: large type stays. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap");
 
 :root {
-  --bg: #ffffff;
-  --tint: #f4f7f6;
-  --ink: #102120;
-  --muted: #5a6866;
-  --line: #e2e8e6;
-  --accent: #0b6b57;
-  --accent-deep: #08503f;
+  --bg: #eeefe9;
+  --surface: #fdfdf8;
+  --tint: #e5e7e0;
+  --ink: #151515;
+  --muted: #4d4f46;
+  --line: #d0d1c9;
+  --line-strong: #9a9b92;
+  --accent: #1d4aff;
+  --accent-deep: #1336c4;
   --accent-ink: #ffffff;
-  --accent-soft: #e5f1ed;
-  --bad: #b42318;
-  --bad-soft: #fdeceb;
-  --serif: "Newsreader", Georgia, "Times New Roman", serif;
-  --sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
-  --shadow: 0 1px 2px rgba(16, 33, 32, 0.04), 0 8px 24px -8px rgba(16, 33, 32, 0.12);
+  --accent-soft: #e4e9ff;
+  --cta: #f7a501;
+  --cta-deep: #b17816;
+  --hot: #c23800;
+  --hot-bright: #f54e00;
+  --bad: #c4261d;
+  --bad-soft: #fde7e5;
+  --serif: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --radius: 6px;
+  --shadow: 0 3px 0 var(--line);
   color-scheme: light;
 }
 
@@ -360,3 +369,113 @@ footer.site { max-width: 680px; margin: 0 auto; padding-block: 28px 44px; border
 .checklist li.done { color: var(--ink); }
 .checklist li.done::before { border-color: var(--accent); background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat; animation: stamp .4s var(--spring); }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ================= the visual language =================
+   Overrides, kept together so the look can change without touching layout. */
+:root { --sun: var(--cta); --sun-soft: #fff1cf; }
+h1, h2, h3 { font-family: var(--sans); font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; }
+h1 { font-size: clamp(2.1rem, 5.6vw, 3rem); }
+.label, .measures .when { font: 600 .74rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hot); }
+.muted { color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: var(--radius); }
+
+/* top bar: a strip across the page */
+.topbar { border-bottom: 1px solid var(--line); }
+.brand { font: 700 1.05rem/1 var(--sans); letter-spacing: -0.02em; }
+.topbar nav a { font: 500 .85rem/1 var(--mono); color: var(--ink); padding: 8px 10px; border-radius: var(--radius); }
+.topbar nav a:hover { background: var(--tint); color: var(--ink); }
+
+/* buttons: a face on a darker base; hover lifts, press pushes in */
+button, .button {
+  border-radius: var(--radius); border: 1.5px solid var(--cta-deep); background: var(--cta); color: var(--ink);
+  box-shadow: 0 4px 0 var(--cta-deep); transform: translateY(0);
+  font: 700 1rem/1.2 var(--sans); letter-spacing: -0.01em; margin-bottom: 4px;
+  transition: transform .1s ease, box-shadow .1s ease, background .1s;
+}
+button:hover, .button:hover { background: #ffb21f; border-color: var(--cta-deep); transform: translateY(-1px); box-shadow: 0 5px 0 var(--cta-deep); }
+button:active, .button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--cta-deep); }
+button.secondary, .button.secondary { background: var(--surface); color: var(--ink); border-color: var(--line-strong); box-shadow: 0 4px 0 var(--line-strong); }
+button.secondary:hover, .button.secondary:hover { background: #fff; border-color: var(--line-strong); box-shadow: 0 5px 0 var(--line-strong); }
+button:disabled, button:disabled:hover { opacity: .55; transform: none; box-shadow: 0 4px 0 var(--cta-deep); }
+.linklike, .linklike:hover, .linklike:active { box-shadow: none; transform: none; margin: 0; border: 0; background: none; color: var(--accent); }
+.replay { background: var(--tint); color: var(--ink); border: 1px solid var(--line); box-shadow: none; margin: 0; font: 500 .78rem/1 var(--mono); }
+.replay:hover { background: #fff; box-shadow: none; transform: none; }
+.chip-btn { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-strong); box-shadow: 0 3px 0 var(--line-strong); }
+.chip-btn:hover { background: #fff; border-color: var(--line-strong); box-shadow: 0 4px 0 var(--line-strong); }
+.composer button { margin-bottom: 4px; }
+
+/* fields */
+textarea, input[type=number], input[type=text], input[type=email] { background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: var(--radius); }
+textarea:focus, input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px var(--cta); }
+
+/* panels: flat, bordered, a hard little shadow */
+.mock, .source-card, .round, .card, .done-card, .belief-quote, .error, .demo-banner {
+  border-radius: var(--radius); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.mock, .source-card, .round, .card { background: var(--surface); }
+.mock { padding: 0; gap: 0; overflow: hidden; border-color: var(--line-strong); box-shadow: 0 4px 0 var(--line-strong); }
+.mock > *:not(.mock-head) { margin: 14px 18px 0; }
+.mock > *:last-child { margin-bottom: 18px; }
+/* window title bar */
+.mock-head { background: var(--tint); border-bottom: 1px solid var(--line-strong); padding: 8px 10px 8px 12px; gap: 10px; }
+.mock-head::before { content: ""; width: 42px; height: 10px; flex: none; background:
+  radial-gradient(circle 5px at 5px 5px, var(--hot-bright) 98%, transparent) 0 0 / 16px 10px repeat-x; opacity: .9; }
+.mock-head .label { margin-right: auto; color: var(--muted); }
+.source-card { border-color: var(--line-strong); box-shadow: 0 4px 0 var(--line-strong); }
+.source-card blockquote, .quote-card blockquote { font-family: var(--sans); font-weight: 500; letter-spacing: -0.01em; }
+.belief-quote { font: 700 1.2rem/1.35 var(--sans); letter-spacing: -0.015em; color: var(--ink); background: var(--surface); border-left: 6px solid var(--cta); }
+.done-card { background: var(--surface); }
+.done-card h2 { color: var(--ink); }
+.error { border-color: #f1b5b0; }
+.demo-banner { background: var(--surface); }
+
+/* chat */
+.msg .bubble { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.msg.me .bubble { background: var(--accent); border-color: var(--accent-deep); box-shadow: 0 3px 0 var(--accent-deep); }
+.msg .who { font: 600 .74rem/1 var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+.composer { background: linear-gradient(to top, var(--bg) 70%, rgba(238, 239, 233, 0)); }
+.composer form { background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: 10px; box-shadow: 0 4px 0 var(--line-strong); }
+.composer form:focus-within { border-color: var(--ink); }
+
+/* claims in the example */
+.claim { border: 1px solid transparent; border-radius: var(--radius); }
+.claim.ok { background: var(--accent-soft); border-color: #bccaff; }
+.claim.no { background: var(--bad-soft); border-color: #f1b5b0; }
+.claim .mk { border-radius: 4px; }
+
+/* homepage */
+.blobs { display: none; }
+.squiggle path { stroke: var(--hot-bright); }
+.band { background: var(--surface); box-shadow: 0 0 0 100vmax var(--surface); border-block: 1px solid var(--line); }
+.band .round, .band .source-card { background: var(--bg); }
+.steps li::before { border-radius: var(--radius); border: 1.5px solid var(--ink); color: var(--ink); background: var(--surface); font: 600 1rem/1 var(--mono); box-shadow: 0 3px 0 var(--ink); }
+.steps li.gate::before { background: var(--cta); color: var(--ink); }
+.steps li:not(:last-child)::after { background: none; border-top: 2px dashed var(--line-strong); height: 0; }
+.gate-note i { border-radius: 3px; background: var(--cta); border: 1.5px solid var(--ink); }
+.measures { border-top: 2px dashed var(--line-strong); }
+.measures div + div { border-left: 1px dashed var(--line-strong); }
+.measures b { font: 700 1.2rem/1.2 var(--sans); }
+.callout { border-left: 6px solid var(--cta); background: var(--surface); padding: 14px 18px; border-radius: 0 var(--radius) var(--radius) 0; color: var(--ink); }
+.score { font: 700 1.15rem/1.3 var(--sans); color: var(--ink); }
+.round.right { border-color: #9fb3ff; }
+.round.right .picked { background: var(--accent); border-color: var(--accent-deep); box-shadow: 0 3px 0 var(--accent-deep); }
+.round.wrong .picked { background: var(--bad); border-color: #8f1b14; box-shadow: 0 3px 0 #8f1b14; color: #fff; }
+footer.site { font-family: var(--mono); font-size: .78rem; }
+
+/* journey */
+.stepper span { border-radius: var(--radius); font: 600 .9rem/1 var(--mono); border-color: var(--line-strong); background: var(--surface); }
+.stepper span.now { border-color: var(--ink); color: var(--ink); background: var(--cta); box-shadow: 0 3px 0 var(--ink); }
+.stepper span.done { background: var(--accent); border-color: var(--accent-deep); }
+.stack > label.question { font: 700 1.3rem/1.3 var(--sans); letter-spacing: -0.015em; }
+.qbar, .progress .track { height: 10px; border-radius: 5px; background: var(--tint); border: 1px solid var(--line); }
+.qbar i, .progress .fill { background: var(--cta); border-radius: 0; }
+.progress { background: var(--bg); }
+.scale b { font: 700 1.8rem/1.1 var(--sans); }
+.scale::before { background: var(--line-strong); height: 2px; }
+.quote-card::before { content: counter(q, decimal-leading-zero); font: 600 1rem/1.9 var(--mono); color: var(--hot); }
+.checklist li::before { border-radius: 4px; }
+.checklist li.now::before { border-radius: 50%; }
+
+/* Google button: white, as Google's guidelines ask */
+button.google { gap: 12px; justify-self: start; }
+button.google svg { flex: none; }

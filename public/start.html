@@ -14,7 +14,6 @@
 // access rules, which let the browser read nothing. Everything goes through /api/journey.
 const SUPABASE_URL = 'https://dlreebwfwspyzsbuoixc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Aiy9ihgEJIVCWtDy4AIDsg_UyGvzpC7';
-// Implicit flow: the emailed link works on any device, not only the one that asked for it.
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { flowType: 'implicit', persistSession: true, detectSessionInUrl: true } });
 const screen = document.getElementById('screen');
 try { localStorage.setItem('vp-journey', '1'); } catch {}
@@ -46,29 +45,23 @@ function errorBox(err) { const box = el('div'); showError(box, err); return box;
 
 // ---------------------------------------------------------------- login
 
+const GOOGLE_SVG = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>';
+
 function loginScreen(message) {
-  const input = el('input', { type: 'email', id: 'email', autocomplete: 'email', placeholder: 'you@example.com', required: '' });
-  const btn = el('button', { type: 'submit' }, 'Send me a login link');
+  const btn = el('button', { type: 'button', class: 'secondary google' });
+  btn.innerHTML = GOOGLE_SVG + '<span>Continue with Google</span>';
   const status = el('div');
-  const form = el('form', { class: 'stack' }, el('label', { for: 'email' }, 'Your email'), input, btn);
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  btn.addEventListener('click', async () => {
     btn.disabled = true;
-    status.replaceChildren(thinking('Checking…'));
-    try {
-      const email = input.value.trim();
-      const { allowed } = await journey('can_join', { email });
-      if (!allowed) { status.replaceChildren(p('This study is invite-only for now, and that email is not on the list.', 'error')); btn.disabled = false; return; }
-      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/start.html' } });
-      if (error) throw error;
-      show(el('span', { class: 'label' }, 'Check your email'), el('h1', {}, 'A login link is on its way'),
-        p('We sent it to ' + email + '. Open the email and tap the link. It brings you straight back here.'),
-        p('Nothing after a few minutes? Check your spam folder.', 'muted'));
-    } catch (err) { status.replaceChildren(errorBox(err)); btn.disabled = false; }
+    const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/start.html' } });
+    if (error) { btn.disabled = false; status.replaceChildren(errorBox(error)); }
   });
-  show(el('span', { class: 'label' }, 'Invite-only pilot'), el('h1', {}, 'Can you be convinced?'),
-    p('Tell us something you believe. An AI will try to change your mind, using only facts it can show you from trusted sources. No passwords: we email you a link.'),
-    message ? p(message, 'error') : null, form, status);
+  show(el('span', { class: 'label' }, 'Free · about 20 minutes'), el('h1', {}, 'Can you be convinced?'),
+    p('Tell us something you believe. An AI will try to change your mind, using only facts it can show you from trusted sources.'),
+    message ? p(message, 'error') : null,
+    btn,
+    p('We use your Google login only so you can come back in a week for the last few questions, on any device. We never post anything or see your password.', 'muted'),
+    status);
 }
 
 // ---------------------------------------------------------------- steps
@@ -83,7 +76,7 @@ const render = {
         el('li', {}, 'You read a short page of what trusted sources say about it.'),
         el('li', {}, 'You chat with an ', el('b', {}, 'AI'), ' that will try to change your mind. It may only say things it can back with a named source.'),
         el('li', {}, 'You answer a few 0–100 questions along the way, and once more a week later.')),
-      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time.', 'muted'),
+      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time. Your answers are kept for the study, without your name.', 'muted'),
       btn);
   },
 
@@ -160,7 +153,7 @@ const render = {
 
   async sourcing() {
     const list = el('ol', { class: 'checklist' },
-      ...['Searching trusted health and science sources', 'Downloading each page', 'Checking every quote word for word', 'Preparing your reading page'].map((t) => el('li', {}, t)));
+      ...['Searching trusted sources on this topic', 'Downloading each page', 'Checking every quote word for word', 'Preparing your reading page'].map((t) => el('li', {}, t)));
     show(el('span', { class: 'label' }, 'One moment'), el('h1', {}, 'Finding the evidence'),
       p('This takes a minute or two. Every quote you’ll see is downloaded from its source and checked word for word.'), list);
     const items = [...list.children];
@@ -181,7 +174,9 @@ const render = {
   no_sources(v) {
     show(el('span', { class: 'label' }, 'Honest answer'), el('h1', {}, 'Not enough trusted sources'),
       el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'),
-      p('We couldn’t find at least two passages from trusted sources that we could check word for word. Rather than argue without evidence, the AI won’t argue at all. Yash will be in touch.'));
+      p('We couldn’t find at least two passages from trusted sources that we could check word for word. Rather than argue without evidence, the AI won’t argue at all.'),
+      p('You can try a different belief. Your answers about this one will be cleared.', 'muted'),
+      restartButton());
   },
 
   brochure(v) {
@@ -200,7 +195,7 @@ const render = {
   waiting(v) {
     const due = new Date(v.due).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
     show(steps(3), el('span', { class: 'label' }, 'Almost done'), el('h1', {}, 'See you in a week'),
-      p('The last step is the same few questions, once more, a week from now. Come back here on or after ' + due + ' and log in with the same email.'));
+      p('The last step is the same few questions, once more, a week from now. Come back here on or after ' + due + ' and continue with the same Google account, on any phone or computer.'));
   },
 
   delayed(v) {
@@ -225,9 +220,15 @@ function confirmBelief(raw, r) {
   const status = el('div');
   redo.addEventListener('click', () => render.belief());
   const form = el('form', { class: 'stack' }, el('label', { for: 'statement' }, 'Is this what you believe? You can edit it.'), ta, el('div', { class: 'row' }, yes, redo), status);
-  form.addEventListener('submit', (e) => { e.preventDefault(); go(yes, () => journey('belief', { statement: ta.value, raw_text: raw, domain: r.domain }), status); });
+  form.addEventListener('submit', (e) => { e.preventDefault(); go(yes, () => journey('belief', { statement: ta.value, raw_text: raw, category: r.category }), status); });
   show(el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'In one sentence'), form);
   ta.focus();
+}
+
+function restartButton() {
+  const b = el('button', { type: 'button' }, 'Try a different belief');
+  b.addEventListener('click', () => go(b, () => journey('restart', {})));
+  return b;
 }
 
 function retryButton() {
@@ -240,7 +241,10 @@ function retryButton() {
 async function go(btn, call, status) {
   btn.disabled = true;
   try { draw(await call()); }
-  catch (err) { btn.disabled = false; (status || screen).append(errorBox(err)); }
+  catch (err) {
+    if (err.status === 401) return loginScreen();
+    btn.disabled = false; (status || screen).append(errorBox(err));
+  }
 }
 
 function draw(v) {
@@ -257,8 +261,7 @@ document.getElementById('signout').addEventListener('click', async () => { await
   if (!data.session) return loginScreen();
   try { draw(await journey('me')); }
   catch (err) {
-    if (err.status === 401) return loginScreen();
-    if (err.status === 403) { await sb.auth.signOut(); return loginScreen('This study is invite-only for now, and that email is not on the list.'); }
+    if (err.status === 401) { await sb.auth.signOut(); return loginScreen(); }
     show(errorBox(err));
   }
 })();

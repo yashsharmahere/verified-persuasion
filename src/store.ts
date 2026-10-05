@@ -116,6 +116,8 @@ export interface JourneyStore {
     disclosed_ai: boolean;
   }): Promise<Participant>;
   getBeliefByParticipant(participantId: string): Promise<JourneyBelief | null>;
+  /** How many participants and beliefs were created since a time: the daily cap on an open site. */
+  countCreatedSince(since: string): Promise<{ participants: number; beliefs: number }>;
   createBelief(b: {
     participant_id: string;
     statement: string;
@@ -125,6 +127,8 @@ export interface JourneyStore {
     instrument: InstrumentItem[];
   }): Promise<JourneyBelief>;
   setBeliefStatus(beliefId: string, status: BeliefStatus): Promise<void>;
+  /** Remove a belief and, by cascade, its reasons, measures, passages and runs. */
+  deleteBelief(beliefId: string): Promise<void>;
   insertReasons(rows: (Reason & { belief_id: string })[]): Promise<void>;
   insertPassages(rows: NewPassage[]): Promise<void>;
   listRuns(beliefId: string): Promise<RunLink[]>;
@@ -156,6 +160,16 @@ export function supabaseStore(db: SupabaseClient = supabaseFromEnv()): FullStore
       return check(res, 'getParticipantByUser') as Participant | null;
     },
 
+    async countCreatedSince(since) {
+      const count = async (table: string) => {
+        const res = await db.from(table).select('id', { count: 'exact', head: true }).gte('created_at', since);
+        if (res.error) throw new Error(`countCreatedSince: ${res.error.message}`);
+        return res.count ?? 0;
+      };
+      const [participants, beliefs] = await Promise.all([count('participants'), count('beliefs')]);
+      return { participants, beliefs };
+    },
+
     async createParticipant(p) {
       const res = await db.from('participants').insert(p).select('id, consented_at').single();
       return check(res, 'createParticipant') as Participant;
@@ -179,6 +193,10 @@ export function supabaseStore(db: SupabaseClient = supabaseFromEnv()): FullStore
 
     async setBeliefStatus(beliefId, status) {
       check(await db.from('beliefs').update({ status }).eq('id', beliefId), 'setBeliefStatus');
+    },
+
+    async deleteBelief(beliefId) {
+      check(await db.from('beliefs').delete().eq('id', beliefId), 'deleteBelief');
     },
 
     async insertReasons(rows) {
@@ -311,6 +329,10 @@ export function memoryStore(seed: {
       const p = participants.find((x) => x.user_id === userId);
       return p ? { id: p.id, consented_at: p.consented_at } : null;
     },
+    // The memory store keeps no clock of its own, so it counts everything.
+    async countCreatedSince() {
+      return { participants: participants.length, beliefs: beliefs.filter((b) => b.participant_id).length };
+    },
     async createParticipant(p) {
       const row = { id: `participant-${++n}`, consented_at: p.consented_at, user_id: p.user_id, email: p.email };
       participants.push(row);
@@ -328,6 +350,14 @@ export function memoryStore(seed: {
     async setBeliefStatus(beliefId, status) {
       const b = beliefs.find((x) => x.id === beliefId);
       if (b) b.status = status;
+    },
+    async deleteBelief(beliefId) {
+      const drop = <T extends { belief_id: string }>(xs: T[]) => {
+        for (let i = xs.length - 1; i >= 0; i--) if (xs[i]!.belief_id === beliefId) xs.splice(i, 1);
+      };
+      const i = beliefs.findIndex((x) => x.id === beliefId);
+      if (i >= 0) beliefs.splice(i, 1);
+      drop(reasons); drop(passages); drop(runs); drop(measures); drop(measureAt);
     },
     async insertReasons(rows) {
       reasons.push(...rows);

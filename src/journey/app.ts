@@ -5,27 +5,21 @@ import { createJourneyHandler } from './handler.js';
  * The journey handler with real dependencies. Built on first use, so a missing
  * env var fails the request, not the import.
  *
- * ALLOWED_EMAILS is a comma-separated allow-list. Empty means nobody: the
- * study is closed until someone is invited.
+ * MAX_NEW_BELIEFS_PER_DAY caps new beliefs across everyone (default 20).
  */
 let handler: ((req: Request) => Promise<Response>) | null = null;
 
 export function handleJourney(req: Request): Promise<Response> {
   if (!handler) {
+    const limit = Number(process.env.MAX_NEW_BELIEFS_PER_DAY);
     const db = supabaseFromEnv();
-    const allowed = new Set(
-      (process.env.ALLOWED_EMAILS ?? '')
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean),
-    );
     handler = createJourneyHandler(supabaseStore(db), {
       async verifyUser(accessToken) {
         const { data, error } = await db.auth.getUser(accessToken);
-        if (error || !data.user?.email) return null;
-        return { id: data.user.id, email: data.user.email.toLowerCase() };
+        if (error || !data.user) return null;
+        return { id: data.user.id, email: (data.user.email ?? '').toLowerCase() };
       },
-      isAllowed: (email) => allowed.has(email.toLowerCase()),
+      dailyLimit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
     });
   }
   return handler(req);

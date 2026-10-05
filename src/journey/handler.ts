@@ -5,24 +5,28 @@ import { modelDraft } from '../draft.js';
 import { runGate } from '../gate/index.js';
 import { measureRows } from '../http.js';
 import { selectPassages } from '../retrieve.js';
-import type { FullStore, InstrumentItem, JourneyBelief, Timepoint } from '../store.js';
+import type { FullStore, InstrumentItem, JourneyBelief, Participant, Timepoint } from '../store.js';
 import { modelShapeBelief, type BeliefShaper } from './shape.js';
 import {
   fetchPageText,
+  isTopic,
   modelFindCandidates,
-  TRUSTED_DOMAINS,
+  SOURCE_LISTS,
   verifyCandidates,
   type Candidate,
   type PageFetcher,
 } from './sourcing.js';
 
 /**
- * The self-serve journey: log in, consent, state a belief, say why, rate it,
+ * The self-serve journey, open to anyone: consent, state a belief, say why, rate it,
  * then the system finds sources, builds the brochure, runs the reversal test,
  * and hands over the same brochure, chat and form pages a token link uses.
  *
  * The server decides which step a person is on from what is stored, so no one
  * can skip a step or answer one twice.
+ *
+ * Anyone with a Google account can take part: logging in is what lets them
+ * come back on any device for the day-7 questions.
  */
 
 export interface User {
@@ -33,10 +37,14 @@ export interface User {
 export interface JourneyDeps {
   /** Resolve a Supabase access token to the logged-in user, or null. */
   verifyUser: (accessToken: string) => Promise<User | null>;
-  /** Who may take part. During the pilot, an allow-list of emails. */
-  isAllowed: (email: string) => boolean;
+  /**
+   * New beliefs allowed in any 24 hours, across everyone. Each one costs a
+   * sourcing search and a reversal run, so an open site needs a ceiling.
+   * New participants are capped at three times this.
+   */
+  dailyLimit?: number;
   shapeBelief?: BeliefShaper;
-  findCandidates?: (statement: string, reasons: string[]) => Promise<Candidate[]>;
+  findCandidates?: (statement: string, reasons: string[], domains: string[]) => Promise<Candidate[]>;
   fetchText?: PageFetcher;
   /** For the automatic reversal run. */
   turn?: TurnDeps;
@@ -55,13 +63,23 @@ export const CONTROLS: InstrumentItem[] = [
 export const QUESTIONS = [
   { code: 'why', text: 'In your own words, why do you believe this?', required: true },
   { code: 'origin', text: 'Where did this idea come from? Your family, someone you know, something you read or saw?', required: false },
-  { code: 'trust', text: 'When it comes to this topic, whose advice do you trust? A doctor, the government, family, something else?', required: false },
+  { code: 'trust', text: 'When it comes to this topic, whose advice do you trust? An expert, the government, family, something else?', required: false },
   { code: 'distrust', text: "Whose advice on this do you NOT trust, and why?", required: false },
   { code: 'change_mind', text: 'Is there anything that would make you think differently? What would you need to see?', required: false },
   { code: 'doctor', text: 'Has a doctor ever told you anything about this for your own health? (You can leave this empty.)', required: false },
 ] as const;
 
+const EXPERT = { code: 'expert', text: 'Has an expert or professional ever told you anything about this? (You can leave this empty.)', required: false } as const;
+
+/** The doctor question only makes sense for health beliefs; elsewhere it asks about any expert. */
+export function questionsFor(topic: string) {
+  return topic === 'health' ? [...QUESTIONS] : [...QUESTIONS.slice(0, -1), EXPERT];
+}
+
 const MIN_SOURCES = 2;
+const DEFAULT_DAILY_LIMIT = 20;
+const BUSY = 'Lots of people have taken part today, so new sign-ups are paused until tomorrow. Please come back then.';
+
 const DAY_MS = 864e5;
 const MAX_ANSWER = 2000;
 
@@ -109,16 +127,24 @@ const json = (status: number, body: unknown) =>
 
 export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
   const shape = deps.shapeBelief ?? modelShapeBelief;
-  const find = deps.findCandidates ?? modelFindCandidates;
+  const findSources = deps.findCandidates ?? modelFindCandidates;
   const fetchText = deps.fetchText ?? fetchPageText;
   const now = deps.now ?? (() => new Date());
 
+  const limit = deps.dailyLimit ?? DEFAULT_DAILY_LIMIT;
+  const since = () => new Date(now().getTime() - DAY_MS).toISOString();
+
   async function user(req: Request): Promise<User> {
-    const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+    const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
     const u = token ? await deps.verifyUser(token) : null;
     if (!u) throw new TurnError(401, 'Please log in.');
-    if (!deps.isAllowed(u.email)) throw new TurnError(403, 'This study is invite-only for now.');
     return u;
+  }
+
+  async function participant(req: Request) {
+    const p = await store.getParticipantByUser((await user(req)).id);
+    if (!p) throw new TurnError(409, 'Please agree to take part first.');
+    return p;
   }
 
   async function body(req: Request): Promise<Record<string, unknown>> {
@@ -131,8 +157,7 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
   }
 
   /** Everything the page needs to show the right step. */
-  async function state(u: User) {
-    const participant = await store.getParticipantByUser(u.id);
+  async function state(participant: Participant | null, email: string) {
     const belief = participant ? await store.getBeliefByParticipant(participant.id) : null;
     const reasons = belief ? (await store.listReasons(belief.id)).length : 0;
     const times = belief ? await store.measureTimes(belief.id) : {};
@@ -143,46 +168,44 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       participant,
       belief,
       view: {
-        email: u.email,
+        email,
         stage,
         due: due ?? null,
         statement: belief?.statement ?? null,
         instrument: stage === 'baseline' && belief ? belief.instrument.map((it, key) => ({ key, text: it.text })) : null,
-        questions: stage === 'reasons' ? QUESTIONS : null,
+        questions: stage === 'reasons' && belief ? questionsFor(belief.domain) : null,
         links: runs.length ? { brochure: token('brochure'), chat: token('treatment') } : null,
       },
     };
   }
 
   const steps: Record<string, (req: Request) => Promise<Response>> = {
-    /** Before sending a login email: is this address invited? Keeps strangers from getting emails. */
-    async can_join(req) {
-      const email = String((await body(req)).email ?? '').trim().toLowerCase();
-      return json(200, { allowed: !!email && deps.isAllowed(email) });
-    },
-
     async me(req) {
-      return json(200, (await state(await user(req))).view);
+      const u = await user(req);
+      return json(200, (await state(await store.getParticipantByUser(u.id), u.email)).view);
     },
 
     async consent(req) {
       const u = await user(req);
-      if (!(await store.getParticipantByUser(u.id))) {
-        await store.createParticipant({
+      let p = await store.getParticipantByUser(u.id);
+      if (!p) {
+        if ((await store.countCreatedSince(since())).participants >= limit * 3) throw new TurnError(429, BUSY);
+        p = await store.createParticipant({
           user_id: u.id,
           email: u.email,
-          label: `web-${u.id.slice(0, 8)}`,
+          label: `web-${randomBytes(4).toString('hex')}`,
           consented_at: now().toISOString(),
           disclosed_ai: true,
         });
       }
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p, u.email)).view);
     },
 
     /** Shape what they typed into one statement. Saves nothing: they confirm or edit it first. */
     async propose(req) {
       const u = await user(req);
-      if ((await state(u)).view.stage !== 'belief') throw new TurnError(409, 'Your belief is already recorded.');
+      const p = await participant(req);
+      if ((await state(p, u.email)).view.stage !== 'belief') throw new TurnError(409, 'Your belief is already recorded.');
       const text = String((await body(req)).text ?? '').trim();
       if (text.length < 5) throw new TurnError(400, 'Please write your belief in a sentence or two.');
       return json(200, await shape(text.slice(0, 1000)));
@@ -190,44 +213,50 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
 
     async belief(req) {
       const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p, u.email);
       if (s.view.stage !== 'belief' || !s.participant) throw new TurnError(409, 'Your belief is already recorded.');
+      if ((await store.countCreatedSince(since())).beliefs >= limit) throw new TurnError(429, BUSY);
       const b = await body(req);
       const statement = String(b.statement ?? '').trim();
       if (statement.length < 10 || statement.length > 300) throw new TurnError(400, 'Please write the statement in one sentence.');
       const instrument = shuffle([{ item: 'target', text: statement }, ...CONTROLS]);
+      // The topic decides which trusted sites are searched; it is stored as the belief's domain.
+      const topic = isTopic(b.category) ? b.category : 'science';
       await store.createBelief({
         participant_id: s.participant.id,
         statement,
         raw_text: String(b.raw_text ?? '').slice(0, 1000),
-        domain: String(b.domain ?? 'general').slice(0, 40),
-        source_whitelist: TRUSTED_DOMAINS,
+        domain: topic,
+        source_whitelist: SOURCE_LISTS[topic],
         instrument,
       });
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p, u.email)).view);
     },
 
     async reasons(req) {
       const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p, u.email);
       if (s.view.stage !== 'reasons' || !s.belief) throw new TurnError(409, 'Your answers are already recorded.');
       const answers = ((await body(req)).answers ?? {}) as Record<string, unknown>;
-      const rows = QUESTIONS.map((q) => ({ q, text: typeof answers[q.code] === 'string' ? (answers[q.code] as string).trim() : '' }))
+      const rows = questionsFor(s.belief.domain).map((q) => ({ q, text: typeof answers[q.code] === 'string' ? (answers[q.code] as string).trim() : '' }))
         .filter(({ q, text }) => {
           if (q.required && !text) throw new TurnError(400, 'Please answer the first question.');
           return !!text;
         })
         .map(({ q, text }) => ({ belief_id: s.belief!.id, code: q.code, verbatim: text.slice(0, MAX_ANSWER), is_primary: q.code === 'why' }));
       await store.insertReasons(rows);
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p, u.email)).view);
     },
 
     async baseline(req) {
       const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p, u.email);
       if (s.view.stage !== 'baseline' || !s.belief) throw new TurnError(409, 'These answers are already recorded.');
       await store.insertMeasures(measureRows(s.belief.id, 'baseline', s.belief.instrument, await body(req)));
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p, u.email)).view);
     },
 
     /**
@@ -237,7 +266,8 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
      */
     async prepare(req) {
       const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p, u.email);
       if (s.view.stage !== 'sourcing' || !s.belief) return json(200, s.view);
       const belief = s.belief;
 
@@ -245,12 +275,13 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       if (passages.length === 0) {
         await store.setBeliefStatus(belief.id, 'sourcing');
         const reasons = (await store.listReasons(belief.id)).map((r) => r.verbatim);
-        const report = await verifyCandidates(belief.id, await find(belief.statement, reasons), fetchText);
+        const domains = belief.source_whitelist;
+        const report = await verifyCandidates(belief.id, await findSources(belief.statement, reasons, domains), domains, fetchText);
         console.log(`sourcing ${belief.id}: kept ${report.kept.length}, rejected ${report.rejected.length}`,
           report.rejected.map((r) => `${r.why}: ${r.candidate.url}`));
         if (report.kept.length < MIN_SOURCES) {
           await store.setBeliefStatus(belief.id, 'no_sources');
-          return json(200, (await state(u)).view);
+          return json(200, (await state(p, u.email)).view);
         }
         await store.insertPassages(report.kept);
         passages = await store.listPassages(belief.id);
@@ -289,7 +320,17 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       }
 
       await store.setBeliefStatus(belief.id, 'ready');
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p, u.email)).view);
+    },
+
+    /** No trusted sources were found: let them start over with a different belief. Only allowed then. */
+    async restart(req) {
+      const u = await user(req);
+      const p = await participant(req);
+      const s = await state(p, u.email);
+      if (s.view.stage !== 'no_sources' || !s.belief) throw new TurnError(409, 'You can only start over when no sources were found.');
+      await store.deleteBelief(s.belief.id);
+      return json(200, (await state(p, u.email)).view);
     },
   };
 
