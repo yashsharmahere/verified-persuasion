@@ -17,24 +17,46 @@ import type { NewPassage } from '../store.js';
  *      strictness and the trusted-site list are what bound that.
  */
 
-/** Public-health and medical bodies whose pages may be quoted. Nothing else is searched or kept. */
-export const TRUSTED_DOMAINS = [
-  'who.int',
-  'nin.res.in',
-  'icmr.gov.in',
-  'mohfw.gov.in',
-  'fssai.gov.in',
-  'nih.gov',
-  'ncbi.nlm.nih.gov',
-  'cdc.gov',
-  'fda.gov',
-  'nhs.uk',
-  'nice.org.uk',
-  'efsa.europa.eu',
-  'heart.org',
-  'diabetes.org',
-  'cancer.gov',
-];
+/**
+ * Whose pages may be quoted, by topic. Nothing else is searched or kept. A
+ * belief gets the list for its topic, decided when it is first stated, and it
+ * is stored on the belief so the conversation uses the same list.
+ *
+ * Learned the hard way (2026-10-05): one health-only list meant a belief about
+ * phone batteries found nothing at all, and the system rightly refused.
+ */
+export const TOPICS = ['health', 'technology', 'money', 'safety', 'science'] as const;
+export type Topic = (typeof TOPICS)[number];
+
+export const SOURCE_LISTS: Record<Topic, string[]> = {
+  health: [
+    'who.int', 'nin.res.in', 'icmr.gov.in', 'mohfw.gov.in', 'fssai.gov.in', 'nih.gov', 'ncbi.nlm.nih.gov', 'cdc.gov',
+    'fda.gov', 'nhs.uk', 'nice.org.uk', 'efsa.europa.eu', 'heart.org', 'diabetes.org', 'cancer.gov',
+  ],
+  technology: [
+    'apple.com', 'samsung.com', 'google.com', 'android.com', 'microsoft.com', 'ieee.org', 'nist.gov', 'energy.gov',
+    'cpsc.gov', 'bis.gov.in', 'ul.com', 'ulse.org', 'batteryuniversity.com',
+  ],
+  money: [
+    'rbi.org.in', 'sebi.gov.in', 'irdai.gov.in', 'pfrda.org.in', 'amfiindia.com', 'ncfe.org.in', 'incometax.gov.in',
+    'investor.gov', 'consumerfinance.gov', 'finra.org', 'moneyhelper.org.uk',
+  ],
+  safety: [
+    'cpsc.gov', 'nfpa.org', 'osha.gov', 'nhtsa.gov', 'fema.gov', 'ready.gov', 'ndma.gov.in', 'morth.nic.in', 'who.int',
+    'cdc.gov', 'ulse.org',
+  ],
+  science: [
+    'nasa.gov', 'noaa.gov', 'usgs.gov', 'epa.gov', 'nist.gov', 'imd.gov.in', 'isro.gov.in', 'nationalacademies.org',
+    'royalsociety.org', 'who.int',
+  ],
+};
+
+export function isTopic(x: unknown): x is Topic {
+  return typeof x === 'string' && (TOPICS as readonly string[]).includes(x);
+}
+
+/** Kept for code that predates topics: the health list. */
+export const TRUSTED_DOMAINS = SOURCE_LISTS.health;
 
 export interface Candidate {
   source_name: string;
@@ -52,25 +74,27 @@ export const SOURCING_MODEL = 'claude-sonnet-5-5';
 
 const SOURCING_PROMPT = `You find published evidence about one belief a person holds. You do not argue; you collect.
 
-Use web search and web fetch to find short passages from the allowed sites that speak directly to the belief, in either direction: passages that support it count as much as passages against it.
+Use web search and web fetch to find short passages from the allowed sites that speak directly to the belief, in either direction: passages that support it count as much as passages against it. Search only the allowed sites; if they say nothing on the belief, return an empty list rather than stretching.
 
 Rules:
 - Copy each quote EXACTLY as it appears on the page: same words, same order. Never paraphrase, shorten inside, or join sentences. If unsure of the exact wording, fetch the page and copy from it.
 - Each quote is one to three sentences, 25 to 400 characters.
 - Use the URL of the page you copied it from.
-- Prefer national guidelines and systematic reviews over single studies. Where an Indian national body (ICMR, ICMR-NIN, the Health Ministry, FSSAI) covers the topic, include it: the reader is in India.
+- Prefer official guidance, standards and systematic reviews over single studies and news. Where an Indian national body on the allowed list covers the topic, include it: the reader is in India.
 - Use at least three different organisations if the allowed sites allow it; no more than four quotes from any one page.
 - Up to 10 quotes from up to 5 pages.
 
 Return JSON only, no other text: {"quotes":[{"source_name":"Organisation, document title, year","url":"https://...","quote":"..."}]}`;
 
 /** Ask the model for candidate quotes. Server tools run on Anthropic's side, so this needs no outbound search access. */
-export async function modelFindCandidates(statement: string, reasons: string[]): Promise<Candidate[]> {
+export async function modelFindCandidates(statement: string, reasons: string[], domains: string[]): Promise<Candidate[]> {
   const anthropic = new Anthropic();
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     {
       role: 'user',
-      content: `BELIEF: "${statement}"\n\nWHY THEY HOLD IT, IN THEIR WORDS:\n${reasons.map((r) => `- ${r}`).join('\n') || '- (not given)'}`,
+      // The tools enforce the list, but the model cannot see it unless told;
+      // without this line it returned nothing at all (2026-10-05).
+      content: `BELIEF: "${statement}"\n\nWHY THEY HOLD IT, IN THEIR WORDS:\n${reasons.map((r) => `- ${r}`).join('\n') || '- (not given)'}\n\nALLOWED SITES (and their subdomains): ${domains.join(', ')}`,
     },
   ];
   // Server tools can pause a long turn; continue it a few times at most.
@@ -81,8 +105,8 @@ export async function modelFindCandidates(statement: string, reasons: string[]):
       system: SOURCING_PROMPT,
       messages,
       tools: [
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 5, allowed_domains: TRUSTED_DOMAINS },
-        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6, allowed_domains: TRUSTED_DOMAINS, max_content_tokens: 20000 },
+        { type: 'web_search_20260209', name: 'web_search', max_uses: 5, allowed_domains: domains },
+        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6, allowed_domains: domains, max_content_tokens: 20000 },
       ],
       // Not in this SDK version's types yet; sent as-is.
     } as unknown as Anthropic.Beta.MessageCreateParamsNonStreaming);
@@ -186,10 +210,11 @@ export interface VerifyReport {
 export async function verifyCandidates(
   beliefId: string,
   candidates: Candidate[],
+  domains: string[],
   fetchText: PageFetcher = fetchPageText,
   max = MAX_SOURCED,
 ): Promise<VerifyReport> {
-  const allowed = new Set(TRUSTED_DOMAINS);
+  const allowed = new Set(domains);
   const pages = new Map<string, Promise<string | null>>();
   const kept: NewPassage[] = [];
   const rejected: VerifyReport['rejected'] = [];

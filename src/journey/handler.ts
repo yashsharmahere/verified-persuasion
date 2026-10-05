@@ -9,8 +9,9 @@ import type { FullStore, InstrumentItem, JourneyBelief, Timepoint } from '../sto
 import { modelShapeBelief, type BeliefShaper } from './shape.js';
 import {
   fetchPageText,
+  isTopic,
   modelFindCandidates,
-  TRUSTED_DOMAINS,
+  SOURCE_LISTS,
   verifyCandidates,
   type Candidate,
   type PageFetcher,
@@ -36,7 +37,7 @@ export interface JourneyDeps {
   /** Who may take part. During the pilot, an allow-list of emails. */
   isAllowed: (email: string) => boolean;
   shapeBelief?: BeliefShaper;
-  findCandidates?: (statement: string, reasons: string[]) => Promise<Candidate[]>;
+  findCandidates?: (statement: string, reasons: string[], domains: string[]) => Promise<Candidate[]>;
   fetchText?: PageFetcher;
   /** For the automatic reversal run. */
   turn?: TurnDeps;
@@ -55,11 +56,18 @@ export const CONTROLS: InstrumentItem[] = [
 export const QUESTIONS = [
   { code: 'why', text: 'In your own words, why do you believe this?', required: true },
   { code: 'origin', text: 'Where did this idea come from? Your family, someone you know, something you read or saw?', required: false },
-  { code: 'trust', text: 'When it comes to this topic, whose advice do you trust? A doctor, the government, family, something else?', required: false },
+  { code: 'trust', text: 'When it comes to this topic, whose advice do you trust? An expert, the government, family, something else?', required: false },
   { code: 'distrust', text: "Whose advice on this do you NOT trust, and why?", required: false },
   { code: 'change_mind', text: 'Is there anything that would make you think differently? What would you need to see?', required: false },
   { code: 'doctor', text: 'Has a doctor ever told you anything about this for your own health? (You can leave this empty.)', required: false },
 ] as const;
+
+const EXPERT = { code: 'expert', text: 'Has an expert or professional ever told you anything about this? (You can leave this empty.)', required: false } as const;
+
+/** The doctor question only makes sense for health beliefs; elsewhere it asks about any expert. */
+export function questionsFor(topic: string) {
+  return topic === 'health' ? [...QUESTIONS] : [...QUESTIONS.slice(0, -1), EXPERT];
+}
 
 const MIN_SOURCES = 2;
 const DAY_MS = 864e5;
@@ -148,7 +156,7 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         due: due ?? null,
         statement: belief?.statement ?? null,
         instrument: stage === 'baseline' && belief ? belief.instrument.map((it, key) => ({ key, text: it.text })) : null,
-        questions: stage === 'reasons' ? QUESTIONS : null,
+        questions: stage === 'reasons' && belief ? questionsFor(belief.domain) : null,
         links: runs.length ? { brochure: token('brochure'), chat: token('treatment') } : null,
       },
     };
@@ -196,12 +204,14 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       const statement = String(b.statement ?? '').trim();
       if (statement.length < 10 || statement.length > 300) throw new TurnError(400, 'Please write the statement in one sentence.');
       const instrument = shuffle([{ item: 'target', text: statement }, ...CONTROLS]);
+      // The topic decides which trusted sites are searched; it is stored as the belief's domain.
+      const topic = isTopic(b.category) ? b.category : 'science';
       await store.createBelief({
         participant_id: s.participant.id,
         statement,
         raw_text: String(b.raw_text ?? '').slice(0, 1000),
-        domain: String(b.domain ?? 'general').slice(0, 40),
-        source_whitelist: TRUSTED_DOMAINS,
+        domain: topic,
+        source_whitelist: SOURCE_LISTS[topic],
         instrument,
       });
       return json(200, (await state(u)).view);
@@ -212,7 +222,7 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       const s = await state(u);
       if (s.view.stage !== 'reasons' || !s.belief) throw new TurnError(409, 'Your answers are already recorded.');
       const answers = ((await body(req)).answers ?? {}) as Record<string, unknown>;
-      const rows = QUESTIONS.map((q) => ({ q, text: typeof answers[q.code] === 'string' ? (answers[q.code] as string).trim() : '' }))
+      const rows = questionsFor(s.belief.domain).map((q) => ({ q, text: typeof answers[q.code] === 'string' ? (answers[q.code] as string).trim() : '' }))
         .filter(({ q, text }) => {
           if (q.required && !text) throw new TurnError(400, 'Please answer the first question.');
           return !!text;
@@ -245,7 +255,8 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       if (passages.length === 0) {
         await store.setBeliefStatus(belief.id, 'sourcing');
         const reasons = (await store.listReasons(belief.id)).map((r) => r.verbatim);
-        const report = await verifyCandidates(belief.id, await find(belief.statement, reasons), fetchText);
+        const domains = belief.source_whitelist;
+        const report = await verifyCandidates(belief.id, await find(belief.statement, reasons, domains), domains, fetchText);
         console.log(`sourcing ${belief.id}: kept ${report.kept.length}, rejected ${report.rejected.length}`,
           report.rejected.map((r) => `${r.why}: ${r.candidate.url}`));
         if (report.kept.length < MIN_SOURCES) {
@@ -289,6 +300,15 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       }
 
       await store.setBeliefStatus(belief.id, 'ready');
+      return json(200, (await state(u)).view);
+    },
+
+    /** No trusted sources were found: let them start over with a different belief. Only allowed then. */
+    async restart(req) {
+      const u = await user(req);
+      const s = await state(u);
+      if (s.view.stage !== 'no_sources' || !s.belief) throw new TurnError(409, 'You can only start over when no sources were found.');
+      await store.deleteBelief(s.belief.id);
       return json(200, (await state(u)).view);
     },
   };

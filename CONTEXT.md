@@ -143,8 +143,9 @@ looked broken. A real-model demo, with a spend cap, can come back after
 identity and own-treatment beliefs), answer the intake questions on screen,
 rate it 0–100 with four controls. Then `prepare`:
 
-1. A model searches a fixed list of trusted sites (`TRUSTED_DOMAINS`) and
-   proposes quotes.
+1. A model searches a fixed list of trusted sites for the belief's topic
+   (`SOURCE_LISTS`: health, technology, money, safety, science; the topic is
+   chosen when the belief is shaped and stored on it) and proposes quotes.
 2. **The server downloads each page and keeps a quote only if it finds it
    word for word** (`verification = 'exact_match'`). This replaces "a person
    opened the source" with "the server opened the source". It proves the quote
@@ -164,6 +165,20 @@ same as at 30, and nothing bad will happen to your health" and declined a
 political belief and a "my BP tablets are useless" belief. Sourcing took
 50 s and proposed 7 quotes, all from one page, so the prompt now asks for at
 least three organisations, Indian national bodies included.
+
+First user test (Yash, "charging my phone overnight ruins the battery or
+might make it explode") ended in `no_sources` with nothing proposed at all.
+Two causes, both fixed: the only list was health sites, and the model was
+told to "search only the allowed sites" without being told which they were
+(the tools enforce `allowed_domains` but the model can't see it), so it
+returned an empty list. With per-topic lists and the sites named in the
+message it proposed 5–6 quotes from Apple support and Battery University.
+The download check can't be run from the dev container (its proxy refuses
+those hosts); it runs on Vercel. Also from that test: the doctor question is
+asked only for health beliefs (others get "Has an expert or professional
+ever told you anything about this?"), and `no_sources` now offers "Try a
+different belief", which deletes the belief and its answers. The four
+control statements looking unrelated is by design: they are decoys.
 
 ### Not done, not blocked
 

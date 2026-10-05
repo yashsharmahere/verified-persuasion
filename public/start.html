@@ -160,7 +160,7 @@ const render = {
 
   async sourcing() {
     const list = el('ol', { class: 'checklist' },
-      ...['Searching trusted health and science sources', 'Downloading each page', 'Checking every quote word for word', 'Preparing your reading page'].map((t) => el('li', {}, t)));
+      ...['Searching trusted sources on this topic', 'Downloading each page', 'Checking every quote word for word', 'Preparing your reading page'].map((t) => el('li', {}, t)));
     show(el('span', { class: 'label' }, 'One moment'), el('h1', {}, 'Finding the evidence'),
       p('This takes a minute or two. Every quote you’ll see is downloaded from its source and checked word for word.'), list);
     const items = [...list.children];
@@ -181,7 +181,9 @@ const render = {
   no_sources(v) {
     show(el('span', { class: 'label' }, 'Honest answer'), el('h1', {}, 'Not enough trusted sources'),
       el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'),
-      p('We couldn’t find at least two passages from trusted sources that we could check word for word. Rather than argue without evidence, the AI won’t argue at all. Yash will be in touch.'));
+      p('We couldn’t find at least two passages from trusted sources that we could check word for word. Rather than argue without evidence, the AI won’t argue at all.'),
+      p('You can try a different belief. Your answers about this one will be cleared.', 'muted'),
+      restartButton());
   },
 
   brochure(v) {
@@ -225,9 +227,15 @@ function confirmBelief(raw, r) {
   const status = el('div');
   redo.addEventListener('click', () => render.belief());
   const form = el('form', { class: 'stack' }, el('label', { for: 'statement' }, 'Is this what you believe? You can edit it.'), ta, el('div', { class: 'row' }, yes, redo), status);
-  form.addEventListener('submit', (e) => { e.preventDefault(); go(yes, () => journey('belief', { statement: ta.value, raw_text: raw, domain: r.domain }), status); });
+  form.addEventListener('submit', (e) => { e.preventDefault(); go(yes, () => journey('belief', { statement: ta.value, raw_text: raw, category: r.category }), status); });
   show(el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'In one sentence'), form);
   ta.focus();
+}
+
+function restartButton() {
+  const b = el('button', { type: 'button' }, 'Try a different belief');
+  b.addEventListener('click', () => go(b, () => journey('restart', {})));
+  return b;
 }
 
 function retryButton() {

@@ -125,6 +125,8 @@ export interface JourneyStore {
     instrument: InstrumentItem[];
   }): Promise<JourneyBelief>;
   setBeliefStatus(beliefId: string, status: BeliefStatus): Promise<void>;
+  /** Remove a belief and, by cascade, its reasons, measures, passages and runs. */
+  deleteBelief(beliefId: string): Promise<void>;
   insertReasons(rows: (Reason & { belief_id: string })[]): Promise<void>;
   insertPassages(rows: NewPassage[]): Promise<void>;
   listRuns(beliefId: string): Promise<RunLink[]>;
@@ -179,6 +181,10 @@ export function supabaseStore(db: SupabaseClient = supabaseFromEnv()): FullStore
 
     async setBeliefStatus(beliefId, status) {
       check(await db.from('beliefs').update({ status }).eq('id', beliefId), 'setBeliefStatus');
+    },
+
+    async deleteBelief(beliefId) {
+      check(await db.from('beliefs').delete().eq('id', beliefId), 'deleteBelief');
     },
 
     async insertReasons(rows) {
@@ -328,6 +334,14 @@ export function memoryStore(seed: {
     async setBeliefStatus(beliefId, status) {
       const b = beliefs.find((x) => x.id === beliefId);
       if (b) b.status = status;
+    },
+    async deleteBelief(beliefId) {
+      const drop = <T extends { belief_id: string }>(xs: T[]) => {
+        for (let i = xs.length - 1; i >= 0; i--) if (xs[i]!.belief_id === beliefId) xs.splice(i, 1);
+      };
+      const i = beliefs.findIndex((x) => x.id === beliefId);
+      if (i >= 0) beliefs.splice(i, 1);
+      drop(reasons); drop(passages); drop(runs); drop(measures); drop(measureAt);
     },
     async insertReasons(rows) {
       reasons.push(...rows);
