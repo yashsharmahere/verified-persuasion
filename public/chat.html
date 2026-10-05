@@ -4,7 +4,7 @@
 <body class="chat"><main>
 <div id="log" aria-live="polite"></div>
 <div id="status"></div>
-<div class="row" id="done-row" hidden>
+<div class="row end-row" id="done-row" hidden>
   <button class="secondary" id="done" type="button">I'm done talking</button>
   <button id="done-yes" type="button" hidden>Yes, end the conversation</button>
   <button class="secondary" id="done-no" type="button" hidden>Keep talking</button>
@@ -26,13 +26,18 @@ function addMessage(speaker, text, sources) {
   const me = speaker === 'participant';
   const bubble = el('div', { class: 'bubble' }, el('p', {}, text));
   if (sources && sources.length) {
-    const s = el('div', { class: 'sources' }, el('span', { class: 'checked' }, '✓ Checked against'));
+    const badge = el('span', { class: 'checked' });
+    badge.innerHTML = CHECK_SVG + 'Every fact checked against';
+    const s = el('div', { class: 'sources' }, badge);
     sources.forEach((src) => {
-      s.append(el('a', { class: 'source-link', href: src.url, target: '_blank', rel: 'noopener' }, src.name + ' ↗'));
+      s.append(el('a', { class: 'source-link', href: src.url, target: '_blank', rel: 'noopener' }, src.name));
     });
     bubble.append(s);
   }
-  const box = el('div', { class: 'msg ' + (me ? 'me' : 'sys') }, el('span', { class: 'who' }, me ? 'You' : 'AI'), bubble);
+  const who = el('span', { class: 'who' });
+  if (me) who.textContent = 'You';
+  else who.innerHTML = BRAND_SVG + 'AI assistant';
+  const box = el('div', { class: 'msg ' + (me ? 'me' : 'sys') }, who, bubble);
   log.append(box);
   box.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
