@@ -340,3 +340,11 @@ Dated, in order. Each line is something learned, and where it is written up.
   the day-7 answer, a Google account doesn't. A daily cap on new beliefs
   bounds the cost of an open site. Nothing reminds people to come back on
   day 7 yet, so expect attrition. (§5)
+- **2026-10-05** First live run of automatic sourcing, on Dad's exact belief:
+  the search proposed quotes from the NIH's National Institute on Aging, the
+  NHS and NCBI, and the download check kept fewer than two. Found by reading
+  the code: the HTML-to-text step put a space where a link or bold text sat
+  inside a sentence, and numeric character codes were not decoded, so true
+  quotes failed the word-for-word match. Fixed, plus browser-like download
+  headers; each belief now stores why every quote was kept or rejected
+  (`beliefs.sourcing_log`). (§2)

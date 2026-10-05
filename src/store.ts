@@ -126,7 +126,7 @@ export interface JourneyStore {
     source_whitelist: string[];
     instrument: InstrumentItem[];
   }): Promise<JourneyBelief>;
-  setBeliefStatus(beliefId: string, status: BeliefStatus): Promise<void>;
+  setBeliefStatus(beliefId: string, status: BeliefStatus, sourcingLog?: unknown): Promise<void>;
   /** Remove a belief and, by cascade, its reasons, measures, passages and runs. */
   deleteBelief(beliefId: string): Promise<void>;
   insertReasons(rows: (Reason & { belief_id: string })[]): Promise<void>;
@@ -191,8 +191,9 @@ export function supabaseStore(db: SupabaseClient = supabaseFromEnv()): FullStore
       return check(res, 'createBelief') as JourneyBelief;
     },
 
-    async setBeliefStatus(beliefId, status) {
-      check(await db.from('beliefs').update({ status }).eq('id', beliefId), 'setBeliefStatus');
+    async setBeliefStatus(beliefId, status, sourcingLog) {
+      const row = sourcingLog === undefined ? { status } : { status, sourcing_log: sourcingLog };
+      check(await db.from('beliefs').update(row).eq('id', beliefId), 'setBeliefStatus');
     },
 
     async deleteBelief(beliefId) {
@@ -347,9 +348,10 @@ export function memoryStore(seed: {
       beliefs.push(row);
       return row;
     },
-    async setBeliefStatus(beliefId, status) {
-      const b = beliefs.find((x) => x.id === beliefId);
+    async setBeliefStatus(beliefId, status, sourcingLog) {
+      const b = beliefs.find((x) => x.id === beliefId) as (typeof beliefs)[number] & { sourcing_log?: unknown } | undefined;
       if (b) b.status = status;
+      if (b && sourcingLog !== undefined) b.sourcing_log = sourcingLog;
     },
     async deleteBelief(beliefId) {
       const drop = <T extends { belief_id: string }>(xs: T[]) => {

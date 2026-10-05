@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { createHandler } from '../src/http.js';
 import { createJourneyHandler, stageOf, type JourneyDeps } from '../src/journey/handler.js';
 import { parseShaped } from '../src/journey/shape.js';
-import { normalizeForMatch, parseCandidates, quoteFoundIn, SOURCE_LISTS, verifyCandidates } from '../src/journey/sourcing.js';
+import { htmlToText, normalizeForMatch, parseCandidates, quoteFoundIn, SOURCE_LISTS, verifyCandidates } from '../src/journey/sourcing.js';
 import { memoryStore } from '../src/store.js';
 
 // ------------------------------------------------------------------ stageOf
@@ -49,6 +49,15 @@ test('a paraphrase, a changed word or a too-short fragment does not match', () =
   assert.ok(!quoteFoundIn('salt intake', page), 'fragments under the minimum length never count');
 });
 
+test('a quote matches a page where the sentence has a link, bold text or coded characters in it', () => {
+  const html = '<p>Older adults <a href="/x">often need</a> fewer calories, but <strong>more nutrients</strong>, which makes it essential. Don&#8217;t skip meals &#x2014; ever.</p>';
+  const page = htmlToText(html);
+  assert.ok(quoteFoundIn('Older adults often need fewer calories, but more nutrients, which makes it essential.', page));
+  assert.ok(quoteFoundIn('which makes it essential. Don’t skip meals — ever.', page), 'numeric entities decode');
+  assert.ok(quoteFoundIn("which makes it essential. Don't skip meals - ever.", page));
+  assert.ok(!quoteFoundIn('Older adults always need fewer calories, but more nutrients.', page), 'a changed word still fails');
+});
+
 test('normalisation changes typography only, never words', () => {
   assert.equal(normalizeForMatch('A  “B”\n—C&amp;D'), 'a "b" -c&d');
 });
@@ -78,7 +87,7 @@ test('only trusted, https, findable quotes are kept, each marked exact_match', a
     'not found word for word on the page',
     'site not on the trusted list',
     'not https',
-    'page could not be downloaded',
+    'page could not be downloaded (404)',
   ]);
 });
 
