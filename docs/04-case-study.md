@@ -365,9 +365,11 @@ Dated, in order. Each line is something learned, and where it is written up.
   widened to AIIMS, Mayo Clinic, Harvard, Johns Hopkins and Cleveland Clinic:
   in the pilot the participant said they trust "medical experts". (§5)
 - **2026-10-05** Participant changed from Yash's father to an acquaintance
-  who believes *using a pillow while sleeping causes a double chin*: one
-  checkable claim, not family (less pressure to please), likely
-  unwarranted. Rejected alternative: "joint family makes you mentally,
-  physically and financially stable" (bundled, vague, evidence both ways,
-  close to identity). No source found mentions pillows, so the system can
-  only argue from known causes, and the gate stops it saying more. (§1, §3)
+  who believes *eating breakfast before brushing your teeth sends mouth
+  germs into the stomach and causes stomach ache*. Chosen over a pillow /
+  double-chin belief because trusted sources speak to its mechanism (about
+  1.5 litres of saliva and millions of oral microbes swallowed daily, more
+  than 99% killed by stomach acid; NIH/PMC), where none mention pillows.
+  Joint-family belief rejected (bundled, vague, evidence both ways, close to
+  identity). Partly true: germs do reach the stomach; the unwarranted part
+  is the causal link to stomach ache. (§1, §3)

@@ -197,35 +197,45 @@ control statements looking unrelated is by design: they are decoys.
 **The participant has not done the run yet.**
 
 **Participant (changed 2026-10-05):** someone Yash knows, not family, who
-believes *using a pillow while sleeping causes a double chin*. They take part
-on their own at /start.html with a Google account (add their Gmail to the
-Google Cloud test users first; the app is in Testing mode).
+believes *if you eat breakfast before brushing your teeth, the germs in your
+mouth get into your stomach and cause stomach ache*. They take part on their
+own at /start.html with a Google account (add their Gmail to the Google Cloud
+test users first; the app is in Testing mode).
 
-Why this belief and not the others considered:
+Why this belief, and not the others considered the same day:
 - **Yash's father** ("I can eat the same at 60 as at 30") was dropped. It
   split into a checkable part and a part the evidence partly supports (older
   adults need *more* protein), and family raises demand characteristics: he
   might move his number to please his son. A pilot run on it is kept in
   `data/pilot-2026-10-05.md`.
 - **"Living in a joint family makes a person mentally, physically and
-  financially stable"** was not chosen: three claims in one, "stable" is
-  vague, the evidence runs both ways, and it sits close to culture and
-  identity, which the brief excludes.
-- **The pillow belief** is one concrete claim, checkable in under a minute,
-  and very likely unwarranted: trusted sources attribute a double chin to
-  fat under the chin, genetics, weight, anatomy and ageing skin. Its cost:
-  avoiding a pillow can mean neck pain and worse sleep.
+  financially stable"**: three claims in one, "stable" is vague, the
+  evidence runs both ways, and it sits close to culture and identity, which
+  the brief excludes.
+- **"Using a pillow while sleeping causes a double chin"**: one clean claim,
+  but no trusted source found mentions pillows, so the system could only
+  argue from what does cause a double chin. Dermatology sources added for it
+  (aad.org, plasticsurgery.org, bad.org.uk) stay on the health list.
+- **The breakfast belief** has sources that speak to its mechanism. A search
+  on 2026-10-05 proposed six quotes, including NIH/PMC (eLife 2019): "Every
+  day, humans swallow around 1.5 liters of saliva, along with millions of
+  oral microbes. Scientists believe that more than 99% of these microbes die
+  as they pass through the acidic environment of the stomach"; NIH/PMC on
+  gastric acid killing bacteria within 15 minutes below pH 3; Cleveland
+  Clinic on lysozyme in saliva; Mayo Clinic on waiting an hour after acidic
+  food to brush.
 
-Known limit: no trusted source found so far mentions pillows at all, so the
-system can only argue from what *does* cause a double chin. It must not say
-"pillows don't cause it" unless a source says so; the gate enforces that.
-Dermatology and plastic-surgery bodies (aad.org, plasticsurgery.org,
-bad.org.uk) were added to the health list for this belief. A search on
-2026-10-05 proposed six quotes from Johns Hopkins, Cleveland Clinic and the
-American Society of Plastic Surgeons.
-
-Not family, which removes the main demand-characteristic risk, but Yash
-still knows them; whatever remains gets stated in the case study.
+Known limits, to state in the case study:
+- **Part of it is true.** Mouth microbes do reach the stomach and gut (the
+  same eLife paper finds more transmission than once thought). What is
+  unwarranted is the link from *eating before brushing* to *stomach ache*.
+  The system must never say germs don't reach the stomach; the gate blocks
+  that because no source says it.
+- **Its cost is mild.** Stomach aches may be blamed on the wrong cause, and
+  breakfast may be skipped when there's no time to brush. Ask in the intake;
+  the "why" questions capture it.
+- Not family, which removes the main demand-characteristic risk, but Yash
+  still knows them.
 
 The intake interview guide is `docs/03-intake-interview.md`.
 
