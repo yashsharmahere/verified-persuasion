@@ -83,7 +83,12 @@ form.addEventListener('submit', async (e) => {
       collected_by: by ? by.value : null,
     }) });
     document.querySelector('.progress')?.remove();
-    form.replaceWith(thanks('Thank you', 'Thank you — your answers are recorded.'));
+    const card = thanks('Thank you', 'Thank you — your answers are recorded.');
+    // Someone on the self-serve journey goes back to it for the next step.
+    let journey = false;
+    try { journey = localStorage.getItem('vp-journey') === '1'; } catch {}
+    if (journey) card.append(el('div', { class: 'row' }, el('a', { class: 'button', href: '/start.html' }, 'Continue →')));
+    form.replaceWith(card);
     status.replaceChildren();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) { submit.disabled = false; showError(status, err); }

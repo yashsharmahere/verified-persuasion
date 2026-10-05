@@ -119,7 +119,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .end-row { justify-content: center; padding-top: 8px; }
 
 /* forms */
-textarea, input[type=number], input[type=text] {
+textarea, input[type=number], input[type=text], input[type=email] {
   font: inherit; color: var(--ink); background: var(--bg);
   border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; width: 100%;
 }
@@ -331,3 +331,32 @@ footer.site { max-width: 680px; margin: 0 auto; padding-block: 28px 44px; border
   .squiggle path { stroke-dashoffset: 0; }
   .done-card svg path { stroke-dashoffset: 0; }
 }
+
+/* ================= self-serve journey ================= */
+@keyframes screen-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.journey main { padding-top: 28px; }
+.screen { display: grid; gap: 18px; }
+.screen.enter { animation: screen-in .45s var(--ease) both; }
+.stack { display: grid; gap: 12px; }
+.stack > label { font-weight: 700; font-size: 1.05rem; }
+.stack > label.question { font: 600 1.35rem/1.3 var(--serif); }
+.who-bar { font-size: .85rem; color: var(--muted); }
+.linklike { min-height: 0; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.linklike:hover { background: none; }
+.promise { display: grid; gap: 10px; padding-left: 1.3em; margin: 0; }
+.promise li::marker { color: var(--accent); font-weight: 700; }
+.belief-quote { font: 500 1.25rem/1.4 var(--serif); color: var(--accent-deep); background: var(--accent-soft); border-radius: 14px; padding: 14px 18px; }
+.qbar { height: 6px; background: var(--tint); border-radius: 3px; overflow: hidden; }
+.qbar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s var(--ease); }
+.stepper { display: flex; gap: 8px; }
+.stepper span { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 600 .95rem/1 var(--serif); border: 1.5px solid var(--line); color: var(--muted); }
+.stepper span.now { border-color: var(--accent); color: var(--accent); animation: stamp .5s var(--spring) both; }
+.stepper span.done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.checklist li { display: flex; align-items: center; gap: 12px; color: var(--muted); }
+.checklist li::before { content: ""; width: 22px; height: 22px; flex: none; border-radius: 50%; border: 2px solid var(--line); }
+.checklist li.now { color: var(--ink); font-weight: 700; }
+.checklist li.now::before { border-color: var(--accent); border-top-color: transparent; animation: spin .8s linear infinite; }
+.checklist li.done { color: var(--ink); }
+.checklist li.done::before { border-color: var(--accent); background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat; animation: stamp .4s var(--spring); }
+@keyframes spin { to { transform: rotate(360deg); } }

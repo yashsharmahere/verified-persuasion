@@ -135,6 +135,36 @@ looked broken. A real-model demo, with a spend cap, can come back after
 `gate:judge` and the reversal run pass. Local click-through:
 `npm run dev -- --demo`.
 
+### Self-serve journey (2026-10-05)
+
+`/start.html`: log in by email (Supabase Auth, magic link, allow-listed by the
+`ALLOWED_EMAILS` env var; only Dad during the pilot), consent, type a belief
+(a model restates it as one rateable sentence and turns away political,
+identity and own-treatment beliefs), answer the intake questions on screen,
+rate it 0–100 with four controls. Then `prepare`:
+
+1. A model searches a fixed list of trusted sites (`TRUSTED_DOMAINS`) and
+   proposes quotes.
+2. **The server downloads each page and keeps a quote only if it finds it
+   word for word** (`verification = 'exact_match'`). This replaces "a person
+   opened the source" with "the server opened the source". It proves the quote
+   exists as written; it does not prove it was read in context. Fewer than two
+   verified quotes: the system declines to argue (`no_sources`).
+3. Runs and tokens are created, the brochure is built, and the reversal test
+   runs automatically, aimed at the participant's own belief.
+
+From there the existing brochure, chat and form pages are used unchanged,
+through the tokens. The server derives the step from what is stored, so no
+step can be skipped or repeated. Code: `src/journey/`, tests in
+`test/journey.test.ts`. Migration `20261005120000_self_serve.sql` (applied).
+
+First real-model checks: shaping turned "I can eat whatever I want even at
+64, same as when I was 30" into "At 64 you can eat whatever you want, the
+same as at 30, and nothing bad will happen to your health" and declined a
+political belief and a "my BP tablets are useless" belief. Sourcing took
+50 s and proposed 7 quotes, all from one page, so the prompt now asks for at
+least three organisations, Indian national bodies included.
+
 ### Not done, not blocked
 
 - Demo video

@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/turn.ts": { "maxDuration": 120 }
+    "api/turn.ts": {
+      "maxDuration": 120
+    },
+    "api/journey.ts": {
+      "maxDuration": 300
+    }
   }
 }

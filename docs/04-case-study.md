@@ -322,3 +322,8 @@ Dated, in order. Each line is something learned, and where it is written up.
   (~18% per drafting call). Judge caching saved nothing (below the minimum)
   and, moving the passages into the system prompt, dropped `gate:judge` to
   6/8. Reverted to 8/8. (§2)
+- **2026-10-05** Self-serve journey built: email login, belief typed on
+  screen, intake questions on screen, automatic sourcing. Human checking of
+  quotes is replaced by the server downloading each source and keeping a
+  quote only on an exact match. What that does and doesn't prove belongs in
+  §2. (CONTEXT.md)

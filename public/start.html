@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Start · Verified Persuasion</title><link rel="stylesheet" href="/app.css"></head>
+<body class="journey">
+<header class="topbar">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><circle cx="16" cy="16" r="11.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".35" stroke-width="1"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified Persuasion</a>
+  <span id="who" class="who-bar" hidden><span id="who-email"></span> · <button type="button" class="linklike" id="signout">Sign out</button></span>
+</header>
+<main><div id="screen" class="screen" aria-live="polite"></div></main>
+<script src="/vendor/supabase.js"></script>
+<script src="/common.js"></script>
+<script>
+// Public by design: the publishable key only works through the database's
+// access rules, which let the browser read nothing. Everything goes through /api/journey.
+const SUPABASE_URL = 'https://dlreebwfwspyzsbuoixc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Aiy9ihgEJIVCWtDy4AIDsg_UyGvzpC7';
+// Implicit flow: the emailed link works on any device, not only the one that asked for it.
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { flowType: 'implicit', persistSession: true, detectSessionInUrl: true } });
+const screen = document.getElementById('screen');
+try { localStorage.setItem('vp-journey', '1'); } catch {}
+
+async function journey(step, body) {
+  const { data } = await sb.auth.getSession();
+  const res = await fetch('/api/journey?step=' + step, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (data.session?.access_token || '') },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  let out = {};
+  try { out = await res.json(); } catch {}
+  if (!res.ok) { const e = new Error(out.error || 'Something went wrong. Please try again.'); e.status = res.status; throw e; }
+  return out;
+}
+
+function show(...nodes) {
+  screen.classList.remove('enter');
+  void screen.offsetWidth; // restart the entrance animation
+  screen.replaceChildren(...nodes.filter((n) => n != null));
+  screen.classList.add('enter');
+  window.scrollTo({ top: 0 });
+}
+const p = (text, cls) => el('p', cls ? { class: cls } : {}, text);
+const steps = (n) => el('div', { class: 'stepper', 'aria-label': 'Step ' + n + ' of 3' },
+  ...[1, 2, 3].map((i) => el('span', { class: i < n ? 'done' : i === n ? 'now' : '' }, String(i))));
+function errorBox(err) { const box = el('div'); showError(box, err); return box; }
+
+// ---------------------------------------------------------------- login
+
+function loginScreen(message) {
+  const input = el('input', { type: 'email', id: 'email', autocomplete: 'email', placeholder: 'you@example.com', required: '' });
+  const btn = el('button', { type: 'submit' }, 'Send me a login link');
+  const status = el('div');
+  const form = el('form', { class: 'stack' }, el('label', { for: 'email' }, 'Your email'), input, btn);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    status.replaceChildren(thinking('Checking…'));
+    try {
+      const email = input.value.trim();
+      const { allowed } = await journey('can_join', { email });
+      if (!allowed) { status.replaceChildren(p('This study is invite-only for now, and that email is not on the list.', 'error')); btn.disabled = false; return; }
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/start.html' } });
+      if (error) throw error;
+      show(el('span', { class: 'label' }, 'Check your email'), el('h1', {}, 'A login link is on its way'),
+        p('We sent it to ' + email + '. Open the email and tap the link. It brings you straight back here.'),
+        p('Nothing after a few minutes? Check your spam folder.', 'muted'));
+    } catch (err) { status.replaceChildren(errorBox(err)); btn.disabled = false; }
+  });
+  show(el('span', { class: 'label' }, 'Invite-only pilot'), el('h1', {}, 'Can you be convinced?'),
+    p('Tell us something you believe. An AI will try to change your mind, using only facts it can show you from trusted sources. No passwords: we email you a link.'),
+    message ? p(message, 'error') : null, form, status);
+}
+
+// ---------------------------------------------------------------- steps
+
+const render = {
+  consent() {
+    const btn = el('button', { type: 'button' }, 'I agree, let’s start');
+    btn.addEventListener('click', () => go(btn, () => journey('consent', {})));
+    show(el('span', { class: 'label' }, 'Before we start'), el('h1', {}, 'How this works'),
+      el('ol', { class: 'promise' },
+        el('li', {}, 'You tell us one thing you believe, and why.'),
+        el('li', {}, 'You read a short page of what trusted sources say about it.'),
+        el('li', {}, 'You chat with an ', el('b', {}, 'AI'), ' that will try to change your mind. It may only say things it can back with a named source.'),
+        el('li', {}, 'You answer a few 0–100 questions along the way, and once more a week later.')),
+      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time.', 'muted'),
+      btn);
+  },
+
+  belief() {
+    const ta = el('textarea', { id: 'belief', rows: '4', placeholder: 'For example: “Term insurance is money thrown away” or “Charging my phone overnight ruins the battery.”' });
+    const btn = el('button', { type: 'submit' }, 'Continue');
+    const status = el('div');
+    const form = el('form', { class: 'stack' }, el('label', { for: 'belief' }, 'What’s something you believe that most experts might disagree with?'), ta, btn, status);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      status.replaceChildren(thinking('Reading what you wrote…'));
+      try {
+        const r = await journey('propose', { text: ta.value });
+        if (!r.in_scope) { status.replaceChildren(p(r.reason, 'error')); btn.disabled = false; return; }
+        confirmBelief(ta.value, r);
+      } catch (err) { status.replaceChildren(errorBox(err)); btn.disabled = false; }
+    });
+    show(el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'What do you believe?'),
+      p('Something everyday, about health, food, money or safety. Write it however you like.'), form);
+    ta.focus();
+  },
+
+  reasons(v) {
+    const qs = v.questions;
+    const answers = {};
+    let i = 0;
+    const ask = () => {
+      const q = qs[i];
+      const ta = el('textarea', { id: 'answer', rows: '5' });
+      ta.value = answers[q.code] || '';
+      const back = el('button', { type: 'button', class: 'secondary' }, 'Back');
+      const next = el('button', { type: 'submit' }, i === qs.length - 1 ? 'Finish' : 'Next');
+      const status = el('div');
+      back.hidden = i === 0;
+      back.addEventListener('click', () => { answers[q.code] = ta.value; i--; ask(); });
+      const form = el('form', { class: 'stack' }, el('label', { for: 'answer', class: 'question' }, q.text), ta,
+        el('div', { class: 'row' }, back, next), status);
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        answers[q.code] = ta.value;
+        if (q.required && !ta.value.trim()) { status.replaceChildren(p('Please answer this one. A sentence or two is plenty.', 'error')); return; }
+        if (i < qs.length - 1) { i++; ask(); return; }
+        go(next, () => journey('reasons', { answers }));
+      });
+      show(el('span', { class: 'label' }, 'Why you believe it · ' + (i + 1) + ' of ' + qs.length),
+        el('div', { class: 'qbar' }, el('i', { style: 'width:' + (100 * (i + 1) / qs.length) + '%' })),
+        el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'), form,
+        p('Answer in your own words. ' + (q.required ? '' : 'You can leave this one empty.'), 'muted'));
+      ta.focus();
+    };
+    ask();
+  },
+
+  baseline(v) {
+    const form = el('form', { class: 'stack' });
+    v.instrument.forEach((it, n) => form.append(el('div', { class: 'item', style: 'animation-delay:' + (n * 0.06) + 's' },
+      el('label', { for: 'q' + it.key }, it.text),
+      el('div', { class: 'num' }, el('input', { type: 'number', id: 'q' + it.key, name: String(it.key), min: '0', max: '100', step: '1', required: '', inputmode: 'numeric' }), el('span', {}, '0 to 100')))));
+    const btn = el('button', { type: 'submit' }, 'Submit answers');
+    const status = el('div');
+    form.append(el('div', { class: 'row' }, btn), status);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const scores = {};
+      form.querySelectorAll('input[type=number]').forEach((i) => { scores[i.name] = Number(i.value); });
+      go(btn, () => journey('baseline', { scores }), status);
+    });
+    show(el('span', { class: 'label' }, 'Before anything else'), el('h1', {}, 'A few questions'),
+      p('For each statement, write how sure you are that it is true:'),
+      el('div', { class: 'scale' }, el('div', {}, el('b', {}, '0'), 'definitely false'), el('div', {}, el('b', {}, '50'), 'no idea'), el('div', {}, el('b', {}, '100'), 'definitely true')),
+      p('There are no right answers. Please give your honest view today, not what you think anyone wants to hear.', 'muted'), form);
+  },
+
+  async sourcing() {
+    const list = el('ol', { class: 'checklist' },
+      ...['Searching trusted health and science sources', 'Downloading each page', 'Checking every quote word for word', 'Preparing your reading page'].map((t) => el('li', {}, t)));
+    show(el('span', { class: 'label' }, 'One moment'), el('h1', {}, 'Finding the evidence'),
+      p('This takes a minute or two. Every quote you’ll see is downloaded from its source and checked word for word.'), list);
+    const items = [...list.children];
+    let k = 0;
+    items[0].classList.add('now');
+    const tick = setInterval(() => {
+      if (k >= items.length - 1) return;
+      items[k].classList.replace('now', 'done'); items[++k].classList.add('now');
+    }, 14000);
+    try {
+      const v = await journey('prepare', {});
+      clearInterval(tick);
+      items.forEach((li) => { li.classList.remove('now'); li.classList.add('done'); });
+      setTimeout(() => draw(v), 700);
+    } catch (err) { clearInterval(tick); screen.append(errorBox(err), retryButton()); }
+  },
+
+  no_sources(v) {
+    show(el('span', { class: 'label' }, 'Honest answer'), el('h1', {}, 'Not enough trusted sources'),
+      el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'),
+      p('We couldn’t find at least two passages from trusted sources that we could check word for word. Rather than argue without evidence, the AI won’t argue at all. Yash will be in touch.'));
+  },
+
+  brochure(v) {
+    show(steps(1), el('span', { class: 'label' }, 'Step 1 of 3'), el('h1', {}, 'Read what the sources say'),
+      el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'),
+      p('A short page of quotes from trusted sources, each with a link to where it comes from. Then a few quick questions.'),
+      el('a', { class: 'button', href: '/brochure.html?t=' + encodeURIComponent(v.links.brochure) }, 'Open the page →'));
+  },
+
+  chat(v) {
+    show(steps(2), el('span', { class: 'label' }, 'Step 2 of 3'), el('h1', {}, 'Talk with the AI'),
+      p('It will try to change your mind, using only facts it can show you a source for. Talk as long as you like, then press “I’m done talking”.'),
+      el('a', { class: 'button', href: '/chat.html?t=' + encodeURIComponent(v.links.chat) }, 'Start the conversation →'));
+  },
+
+  waiting(v) {
+    const due = new Date(v.due).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+    show(steps(3), el('span', { class: 'label' }, 'Almost done'), el('h1', {}, 'See you in a week'),
+      p('The last step is the same few questions, once more, a week from now. Come back here on or after ' + due + ' and log in with the same email.'));
+  },
+
+  delayed(v) {
+    show(steps(3), el('span', { class: 'label' }, 'Step 3 of 3'), el('h1', {}, 'One last time'),
+      p('The same few questions as before. Your honest view today, whatever it is.'),
+      el('a', { class: 'button', href: '/measure.html?tp=delayed&t=' + encodeURIComponent(v.links.chat) }, 'Answer the questions →'));
+  },
+
+  done() {
+    const mark = el('div', { class: 'done-card' });
+    mark.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="var(--accent)"/><path d="M14 25l7 7 13-15" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    mark.append(el('h2', {}, 'All done. Thank you!'), p('Your answers are recorded. Thank you for taking part.'));
+    show(mark);
+  },
+};
+
+function confirmBelief(raw, r) {
+  const ta = el('textarea', { id: 'statement', rows: '3' });
+  ta.value = r.statement;
+  const yes = el('button', { type: 'submit' }, 'Yes, that’s it');
+  const redo = el('button', { type: 'button', class: 'secondary' }, 'Start again');
+  const status = el('div');
+  redo.addEventListener('click', () => render.belief());
+  const form = el('form', { class: 'stack' }, el('label', { for: 'statement' }, 'Is this what you believe? You can edit it.'), ta, el('div', { class: 'row' }, yes, redo), status);
+  form.addEventListener('submit', (e) => { e.preventDefault(); go(yes, () => journey('belief', { statement: ta.value, raw_text: raw, domain: r.domain }), status); });
+  show(el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'In one sentence'), form);
+  ta.focus();
+}
+
+function retryButton() {
+  const b = el('button', { type: 'button' }, 'Try again');
+  b.addEventListener('click', () => render.sourcing());
+  return b;
+}
+
+/** Run a step, then draw whatever the server says comes next. */
+async function go(btn, call, status) {
+  btn.disabled = true;
+  try { draw(await call()); }
+  catch (err) { btn.disabled = false; (status || screen).append(errorBox(err)); }
+}
+
+function draw(v) {
+  document.getElementById('who').hidden = false;
+  document.getElementById('who-email').textContent = v.email;
+  (render[v.stage] || render.done)(v);
+}
+
+document.getElementById('signout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+(async () => {
+  show(thinking('Loading…'));
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return loginScreen();
+  try { draw(await journey('me')); }
+  catch (err) {
+    if (err.status === 401) return loginScreen();
+    if (err.status === 403) { await sb.auth.signOut(); return loginScreen('This study is invite-only for now, and that email is not on the list.'); }
+    show(errorBox(err));
+  }
+})();
+</script>
+</body></html>
