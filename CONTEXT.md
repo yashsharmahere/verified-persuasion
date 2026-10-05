@@ -137,11 +137,11 @@ looked broken. A real-model demo, with a spend cap, can come back after
 
 ### Self-serve journey (2026-10-05)
 
-`/start.html`: open to anyone, no login (since 2026-10-05; before that, an
-emailed magic link and an allow-list). Agreeing creates a participant and a
-random key; the browser keeps it, and a private link (`/start.html#k=…`)
-brings the person back from any device for day 7. Only the key's SHA-256 is
-stored (`participants.key_hash`). New beliefs are capped at
+`/start.html`: open to anyone with a Google account (Supabase Auth, Google
+provider). Before 2026-10-05 it was an emailed magic link with an allow-list
+(Dad only); a no-login version with a private link was built and replaced
+the same day, because a lost link loses the day-7 answer. Logging in is what
+lets someone come back on any device on day 7. New beliefs are capped at
 `MAX_NEW_BELIEFS_PER_DAY` across everyone (default 20; new participants at
 3×), because each one costs a sourcing search and a reversal run. Then: type a belief
 (a model restates it as one rateable sentence and turns away political,

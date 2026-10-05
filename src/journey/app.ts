@@ -12,7 +12,13 @@ let handler: ((req: Request) => Promise<Response>) | null = null;
 export function handleJourney(req: Request): Promise<Response> {
   if (!handler) {
     const limit = Number(process.env.MAX_NEW_BELIEFS_PER_DAY);
-    handler = createJourneyHandler(supabaseStore(supabaseFromEnv()), {
+    const db = supabaseFromEnv();
+    handler = createJourneyHandler(supabaseStore(db), {
+      async verifyUser(accessToken) {
+        const { data, error } = await db.auth.getUser(accessToken);
+        if (error || !data.user) return null;
+        return { id: data.user.id, email: (data.user.email ?? '').toLowerCase() };
+      },
       dailyLimit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
     });
   }

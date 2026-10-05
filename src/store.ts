@@ -103,13 +103,14 @@ export type NewPassage = Omit<Passage, 'id'> & { belief_id: string };
 
 /**
  * What the self-serve journey needs on top of the conversation's Store: a
- * participant found by their key, their belief and its preparation status,
+ * participant found by their login, their belief and its preparation status,
  * and the runs whose tokens the existing pages already use.
  */
 export interface JourneyStore {
-  getParticipantByKey(keyHash: string): Promise<Participant | null>;
+  getParticipantByUser(userId: string): Promise<Participant | null>;
   createParticipant(p: {
-    key_hash: string;
+    user_id: string;
+    email: string;
     label: string;
     consented_at: string;
     disclosed_ai: boolean;
@@ -154,9 +155,9 @@ function check<T>(res: { data: T; error: { message: string } | null }, what: str
 export function supabaseStore(db: SupabaseClient = supabaseFromEnv()): FullStore {
   const beliefCols = 'id, statement, domain, source_whitelist, instrument, status';
   return {
-    async getParticipantByKey(keyHash) {
-      const res = await db.from('participants').select('id, consented_at').eq('key_hash', keyHash).maybeSingle();
-      return check(res, 'getParticipantByKey') as Participant | null;
+    async getParticipantByUser(userId) {
+      const res = await db.from('participants').select('id, consented_at').eq('user_id', userId).maybeSingle();
+      return check(res, 'getParticipantByUser') as Participant | null;
     },
 
     async countCreatedSince(since) {
@@ -313,7 +314,7 @@ export function memoryStore(seed: {
   runs?: (Run & { access_token: string })[];
 } = {}) {
   const beliefs: (Belief & { status?: BeliefStatus; participant_id?: string })[] = [...(seed.beliefs ?? [])];
-  const participants: (Participant & { key_hash: string })[] = [];
+  const participants: (Participant & { user_id: string; email: string })[] = [];
   const measureAt: { belief_id: string; timepoint: Timepoint; at: string }[] = [];
   const reasons = [...(seed.reasons ?? [])];
   const passages = [...(seed.passages ?? [])];
@@ -324,8 +325,8 @@ export function memoryStore(seed: {
   let n = 0;
 
   const store: FullStore = {
-    async getParticipantByKey(keyHash) {
-      const p = participants.find((x) => x.key_hash === keyHash);
+    async getParticipantByUser(userId) {
+      const p = participants.find((x) => x.user_id === userId);
       return p ? { id: p.id, consented_at: p.consented_at } : null;
     },
     // The memory store keeps no clock of its own, so it counts everything.
@@ -333,7 +334,7 @@ export function memoryStore(seed: {
       return { participants: participants.length, beliefs: beliefs.filter((b) => b.participant_id).length };
     },
     async createParticipant(p) {
-      const row = { id: `participant-${++n}`, consented_at: p.consented_at, key_hash: p.key_hash };
+      const row = { id: `participant-${++n}`, consented_at: p.consented_at, user_id: p.user_id, email: p.email };
       participants.push(row);
       return { id: row.id, consented_at: row.consented_at };
     },

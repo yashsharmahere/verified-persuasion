@@ -102,6 +102,8 @@ function setup(over: Partial<JourneyDeps> = {}) {
   const m = memoryStore();
   let clock = new Date('2026-10-05T10:00:00Z');
   const deps: JourneyDeps = {
+    // Any token "tok-<name>" is a logged-in Google user called <name>.
+    verifyUser: async (t) => (t.startsWith('tok-') ? { id: `user-${t.slice(4)}`, email: `${t.slice(4)}@gmail.com` } : null),
     shapeBelief: async () => ({ in_scope: true, statement: 'A person over 60 can eat the same as at 30.', domain: 'nutrition', category: 'health', reason: '' }),
     findCandidates: async () => QUOTES.map((quote) => ({ source_name: 'ICMR-NIN', url: 'https://www.nin.res.in/g.pdf', quote })),
     fetchText: async () => QUOTES.join(' '),
@@ -122,36 +124,28 @@ function setup(over: Partial<JourneyDeps> = {}) {
       return { supported: !!p, passageId: p?.id ?? null };
     },
   });
-  // The browser's side: keep the key consent hands back, send it every time.
-  let key = '';
-  const call = async (step: string, body?: unknown, as?: string) => {
-    const r = await journey(
+  const call = (step: string, body?: unknown, token = 'tok-dad') =>
+    journey(
       new Request(`http://x/api/journey?step=${step}`, {
         method: body === undefined ? 'GET' : 'POST',
-        headers: { authorization: `Bearer ${as ?? key}`, 'content-type': 'application/json' },
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       }),
     );
-    const k = ((await r.clone().json().catch(() => ({}))) as { key?: string }).key;
-    if (k && as === undefined) key = k;
-    return r;
-  };
   return { m, call, app, tick: (days: number) => (clock = new Date(clock.getTime() + days * 864e5)) };
 }
 
 const view = async (r: Response) => (await r.json()) as { stage: string; links: { brochure: string; chat: string } | null; instrument: { key: number }[] | null };
 
-test('anyone can start; consent hands out a key, and only its hash is stored', async () => {
+test('any logged-in person can take part; without a login, nothing', async () => {
   const { m, call } = setup();
-  assert.equal((await view(await call('me'))).stage, 'consent', 'no key: the start');
-  assert.equal((await call('belief', { statement: 'Something long enough to count.' })).status, 401, 'no key, no steps');
-  const r = (await (await call('consent', {})).json()) as { stage: string; key: string };
-  assert.equal(r.stage, 'belief');
-  assert.ok(r.key.length >= 30);
-  assert.ok(!JSON.stringify(m.participants).includes(r.key), 'the key itself is never stored');
-  assert.equal((await view(await call('me'))).stage, 'belief', 'the key resumes the journey');
-  assert.equal((await view(await call('me', undefined, 'someone-elses-made-up-key-123'))).stage, 'consent');
-  assert.equal(((await (await call('consent', {})).json()) as { key?: string }).key, undefined, 'consenting again changes nothing');
+  assert.equal((await call('me', undefined, 'bad')).status, 401);
+  assert.equal((await call('consent', {}, '')).status, 401);
+  assert.equal((await view(await call('me', undefined, 'tok-anyone'))).stage, 'consent', 'no allow-list');
+  assert.equal((await view(await call('consent', {}, 'tok-anyone'))).stage, 'belief');
+  assert.equal((await view(await call('consent', {}, 'tok-anyone'))).stage, 'belief', 'consenting again changes nothing');
+  assert.equal(m.participants.length, 1);
+  assert.equal((await call('belief', { statement: 'Something long enough to count.' }, 'tok-other')).status, 409, 'no steps before consent');
 });
 
 test('an open site has a daily ceiling on new beliefs', async () => {
@@ -159,8 +153,8 @@ test('an open site has a daily ceiling on new beliefs', async () => {
   await call('consent', {});
   assert.equal((await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' })).status, 200);
   // A second person, same day: the ceiling is reached.
-  const second = ((await (await call('consent', {}, '')).json()) as { key: string }).key;
-  const r = await call('belief', { statement: 'Another belief that is long enough.', category: 'health' }, second);
+  await call('consent', {}, 'tok-second');
+  const r = await call('belief', { statement: 'Another belief that is long enough.', category: 'health' }, 'tok-second');
   assert.equal(r.status, 429);
   assert.match(((await r.json()) as { error: string }).error, /tomorrow/);
 });
@@ -237,7 +231,7 @@ test('with fewer than two verified quotes, the system says so instead of arguing
 
 test('steps cannot be skipped or repeated', async () => {
   const { call } = setup();
-  assert.equal((await call('belief', { statement: 'Something long enough to count.' })).status, 401, 'no belief before consent');
+  assert.equal((await call('belief', { statement: 'Something long enough to count.' })).status, 409, 'no belief before consent');
   await call('consent', {});
   assert.equal((await call('reasons', { answers: { why: 'x' } })).status, 409, 'no reasons before a belief');
   await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });

@@ -335,8 +335,8 @@ Dated, in order. Each line is something learned, and where it is written up.
   University. The system failed closed, as designed, but a dead end with
   no way forward is a product failure: added "Try a different belief", and
   the doctor question now appears only for health beliefs. (§2, §5)
-- **2026-10-05** Login removed: anyone can take part. A random key in the
-  browser, and a private link to return on day 7, replace the emailed login;
-  a daily cap on new beliefs bounds the cost of an open site. Trade-off: a
-  person who loses the link can't be matched to their day-7 answer, which
-  shows up as attrition. (§5)
+- **2026-10-05** Opened to anyone. Tried no login (a private link to return
+  on day 7), then switched to Google login the same day: a lost link loses
+  the day-7 answer, a Google account doesn't. A daily cap on new beliefs
+  bounds the cost of an open site. Nothing reminds people to come back on
+  day 7 yet, so expect attrition. (§5)
