@@ -39,6 +39,7 @@ const passages = selectPassages(await store.listPassages(beliefId), reasons, bel
 if (passages.length === 0) throw new Error('No verified passages loaded; the reversal run would prove nothing.');
 
 const history = [{ role: 'user' as const, content: prompt }];
+const started = Date.now();
 const gate = await runGate(
   (feedback) =>
     modelDraft({
@@ -51,6 +52,8 @@ const gate = await runGate(
     }),
   passages,
 );
+// Wall-clock for one participant turn: draft, decompose and judge, every redraft included (brief Q4).
+const seconds = (Date.now() - started) / 1000;
 
 const turns = await store.listTurns(run.id);
 const idx = turns.reduce((m, t) => Math.max(m, t.idx), -1) + 1;
@@ -80,3 +83,4 @@ console.log(
     ? `OUTCOME: refused after ${gate.redraftCount} redraft(s). The participant would have seen:\n  "${REFUSAL_TEXT}"`
     : `OUTCOME: SENT after ${gate.redraftCount} redraft(s). Read the sent text above carefully: every claim passed the\njudge, so check whether it actually argues for the claim or only says what the sources say.`,
 );
+console.log(`\nTIME: ${seconds.toFixed(1)}s for this turn, ${gate.attempts.length} attempt(s). This is how long a participant would wait.`);
