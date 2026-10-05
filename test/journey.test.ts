@@ -223,7 +223,32 @@ test('the reversal test runs automatically, aimed at their own belief, and is lo
   await call('baseline', { scores: Object.fromEntries(v.instrument!.map((it) => [it.key, 50])) });
   await call('prepare', {});
   const reversal = m.runs.find((r) => r.condition === 'reversal')!;
+  assert.equal(m.turns.filter((t) => t.run_id === reversal.id).length, 0, 'not part of preparing: it cannot slow it down');
+  assert.deepEqual(await (await call('reversal', {})).json(), { done: true });
   assert.equal(m.turns.filter((t) => t.run_id === reversal.id).length, 2, 'the prompt and the system reply are logged');
+  await call('reversal', {});
+  assert.equal(m.turns.filter((t) => t.run_id === reversal.id).length, 2, 'it runs once');
+});
+
+test('a failed reversal run is retried on the next visit', async () => {
+  let down = true;
+  const { m, call } = setup({
+    turn: {
+      draft: async () => { if (down) throw new Error('credit balance is too low'); return 'No.'; },
+      decompose: async (t) => [{ text: t, kind: 'connective' }],
+      judge: async () => ({ supported: false }),
+    },
+  });
+  await call('consent', {});
+  await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });
+  const v = await view(await call('reasons', { answers: { why: 'Because.' } }));
+  await call('baseline', { scores: Object.fromEntries(v.instrument!.map((it) => [it.key, 50])) });
+  assert.equal((await view(await call('prepare', {}))).stage, 'brochure', 'an outage does not block the participant');
+  assert.equal((await call('reversal', {})).status, 503);
+  down = false;
+  assert.deepEqual(await (await call('reversal', {})).json(), { done: true });
+  const reversal = m.runs.find((r) => r.condition === 'reversal')!;
+  assert.equal(m.turns.filter((t) => t.run_id === reversal.id).length, 2);
 });
 
 test('with fewer than two verified quotes, the system says so instead of arguing', async () => {
@@ -276,4 +301,22 @@ test('after no sources are found, they can start over with a different belief', 
   assert.equal((await view(await call('restart', {}))).stage, 'belief');
   assert.equal(m.reasons.length, 0);
   assert.equal(m.measures.length, 0);
+});
+
+test('with fewer than five verified quotes, it searches once more for other pages', async () => {
+  const first = QUOTES.map((quote) => ({ source_name: 'ICMR-NIN', url: 'https://www.nin.res.in/g.pdf', quote }));
+  const more = ['Older adults may have different vitamin and mineral needs than younger adults.', 'Since blood pressure often rises with age, limiting sodium becomes more important.']
+    .map((quote) => ({ source_name: 'NIH', url: 'https://www.nih.gov/x', quote }));
+  const calls: string[][] = [];
+  const { m, call } = setup({
+    findCandidates: async (_s, _r, _d, avoid = []) => (calls.push(avoid), avoid.length ? [...more, first[0]!] : first),
+    fetchText: async () => [...QUOTES, ...more.map((x) => x.quote)].join(' '),
+  });
+  await call('consent', {});
+  await call('belief', { statement: 'A person over 60 can eat the same as at 30.', category: 'health' });
+  const v = await view(await call('reasons', { answers: { why: 'Because.' } }));
+  await call('baseline', { scores: Object.fromEntries(v.instrument!.map((it) => [it.key, 50])) });
+  await call('prepare', {});
+  assert.deepEqual(calls, [[], ['https://www.nin.res.in/g.pdf']], 'the second search is told which pages were tried');
+  assert.equal(m.passages.length, 4, 'two from each round; the repeated quote is not stored twice');
 });

@@ -348,3 +348,14 @@ Dated, in order. Each line is something learned, and where it is written up.
   quotes failed the word-for-word match. Fixed, plus browser-like download
   headers; each belief now stores why every quote was kept or rejected
   (`beliefs.sourcing_log`). (§2)
+- **2026-10-05** First full test run (Yash, pilot, not a participant): 3
+  verified sources (NIDDK, ICMR–NIN, FDA); 25 claims in the chat, all
+  supported, none blocked; belief 100 → 80 after the brochure, controls
+  flat. Two failures, both from the Anthropic account running out of credit
+  mid-run: the reversal test never ran, and one chat message got no reply
+  and was left orphaned in the log. Fixed so an outage costs a retry, not
+  data: the reversal is its own step, retried on later visits; a failed chat
+  turn stores nothing and hands the message back. Also: a second sourcing
+  round when fewer than five quotes verify (three made the AI repeat itself),
+  and the opening now starts from the reason they gave instead of asking
+  for it again; the drafter now sees that opening. (§2, §4, §5)

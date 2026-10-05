@@ -40,6 +40,7 @@ function addMessage(speaker, text, sources) {
   const box = el('div', { class: 'msg ' + (me ? 'me' : 'sys') }, who, bubble);
   log.append(box);
   box.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return box;
 }
 
 function finish() {
@@ -71,7 +72,7 @@ form.addEventListener('submit', async (e) => {
   input.value = '';
   grow();
   send.disabled = input.disabled = true;
-  addMessage('participant', message);
+  const mine = addMessage('participant', message);
   // The steps every reply goes through, in order. Timing is approximate; the
   // last step stays until the checked reply arrives.
   const stages = ['Writing a reply…', 'Splitting it into single facts…', 'Checking each fact against its source…'];
@@ -91,7 +92,12 @@ form.addEventListener('submit', async (e) => {
     const r = await api('/api/turn', { method: 'POST', body: JSON.stringify({ t: token, message }) });
     clearInterval(ticker); wait.remove();
     addMessage('system', r.text, r.sources);
-  } catch (err) { clearInterval(ticker); wait.remove(); showError(status, err); }
+  } catch (err) {
+    // Nothing was stored: take the message back so it can be sent again.
+    clearInterval(ticker); wait.remove(); mine?.remove();
+    input.value = message; grow();
+    showError(status, err);
+  }
   send.disabled = input.disabled = false;
   input.focus();
 });

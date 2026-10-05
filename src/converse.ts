@@ -32,13 +32,20 @@ export interface TurnReply {
   sources: { name: string; url: string }[];
 }
 
-/** The opening shown before the participant has said anything. Fixed text, no claims. */
-export function openingText(statement: string): string {
+/**
+ * The opening shown before the participant has said anything. Fixed text, no
+ * claims. When they have already said why they believe it, it starts from
+ * their reason instead of asking for it a second time.
+ */
+export function openingText(statement: string, why?: string): string {
+  const reason = why?.trim().replace(/\s+/g, ' ').slice(0, 300);
   return (
     "Hello. I'm an AI, and I'll be honest about what I'm for: I'm going to try to change your mind about this statement:\n\n" +
     `"${statement}"\n\n` +
-    "Everything I tell you will come from a named source, and if I can't back something up, I won't say it. " +
-    'To start: in your own words, why do you think this is true?'
+    "Everything I tell you will come from a named source, and if I can't back something up, I won't say it.\n\n" +
+    (reason
+      ? `You told us why you believe it: "${reason}". Is there anything you'd like to add, or shall I start with what the sources say about that?`
+      : 'To start: in your own words, why do you think this is true?')
   );
 }
 
@@ -85,22 +92,31 @@ export async function runTurn(
     throw new TurnError(429, 'This conversation has reached its length limit.');
   }
 
+  // Draft and check first, log both sides after: if the model is unavailable,
+  // nothing is stored and the participant can simply send the message again.
+  const idx = nextIdx(turns);
+  const history = [...toHistory(turns), { role: 'user' as const, content: text }];
+  const draft = deps.draft ?? modelDraft;
+  let gate: GateResult;
+  try {
+    gate = await runGate(
+      (feedback) => draft({ statement: belief.statement, reasons, passages, history, feedback }),
+      passages,
+      deps,
+    );
+  } catch (err) {
+    console.error('turn failed', err);
+    throw new TurnError(503, 'The AI could not reply just now. Your message was not sent; please try again in a minute.');
+  }
+
   const participantTurn = await store.insertTurn({
     run_id: run.id,
-    idx: nextIdx(turns),
+    idx,
     speaker: 'participant',
     drafted_text: null,
     sent_text: text,
     redraft_count: 0,
   });
-
-  const history = toHistory([...turns, participantTurn]);
-  const draft = deps.draft ?? modelDraft;
-  const gate = await runGate(
-    (feedback) => draft({ statement: belief.statement, reasons, passages, history, feedback }),
-    passages,
-    deps,
-  );
 
   const systemTurn = await store.insertTurn({
     run_id: run.id,
