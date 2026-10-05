@@ -36,6 +36,22 @@ function showError(where, err) {
   where.replaceChildren(el('p', { class: 'error' }, err.message || String(err)));
 }
 
+const BRAND_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="var(--accent-fg)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+// The same small header on every participant page.
+const topbar = el('header', { class: 'topbar' });
+const brand = el('a', { class: 'brand', href: isDemo ? '/' : '#' });
+brand.innerHTML = BRAND_SVG + '<span>Verified Persuasion</span>';
+if (!isDemo) brand.removeAttribute('href');
+topbar.append(brand, el('span', { class: 'muted tagline' }, 'Every fact is checked against its source'));
+document.body.prepend(topbar);
+
+// A "working on it" bubble with animated dots.
+function thinking(text) {
+  return el('div', { class: 'thinking', role: 'status' },
+    el('span', { class: 'dots', 'aria-hidden': 'true' }, el('i'), el('i'), el('i')), text);
+}
+
 if (isDemo) {
   document.querySelector('main').prepend(el('div', { class: 'demo-banner' },
     el('b', {}, 'Demo. '),

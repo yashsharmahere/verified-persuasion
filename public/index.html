@@ -1,40 +1,66 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Verified Persuasion</title>
 <meta name="description" content="A conversation system that may only say what it can trace to a named source.">
 <link rel="stylesheet" href="/app.css"></head>
-<body><main>
-<h1>Verified Persuasion</h1>
-<p class="lead">A conversation system that tries to change one person's mind about one wrong belief, and may only say what it can trace to a named source. If it can't source a claim, it doesn't say it.</p>
+<body>
+<header class="topbar">
+  <span class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="var(--accent-fg)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Verified Persuasion</span></span>
+  <a class="muted" href="https://github.com/yashsharmahere/verified-persuasion">Code ↗</a>
+</header>
+<main>
 
-<h2>Try the demo</h2>
-<p>The demo uses a made-up belief and a stand-in for the AI model, so you can click through every page a participant sees. It doesn't use the AI model or the study's database.</p>
-<div class="cards">
-  <a class="card" id="demo-chat" href="#">
-    <b>The conversation</b>
-    <span>Talk to the system. Every sentence it sends has passed the source check, and names its source.</span>
-  </a>
-  <a class="card" id="demo-brochure" href="#">
-    <b>The brochure</b>
-    <span>The comparison condition: the same verified quotes, as a fixed page, with no conversation.</span>
-  </a>
-</div>
-<p class="muted">Each ends with the 0–100 belief questions a participant answers.</p>
+<section class="hero">
+  <h1>An AI that argues only with what it can prove.</h1>
+  <p class="lead">It tries to change one person's mind about one everyday belief. Every fact it wants to say is checked against a real, human-verified source before the person sees it. If it can't back a fact up, it doesn't say it.</p>
+</section>
 
-<h2>How it works</h2>
-<ol class="steps">
-  <li><b>Draft.</b> A model writes a reply, using only passages a person has checked against the original source.</li>
-  <li><b>Split.</b> A separate model call breaks the reply into pieces and labels each one: a factual claim, a question, or a reflection. Anything it can't label counts as a claim.</li>
-  <li><b>Check.</b> Each factual claim is tested against its passage: does the passage actually <i>say</i> this, not just talk about the same topic?</li>
-  <li><b>Send or refuse.</b> Only a reply whose every claim passes is sent, with its sources named. Otherwise the model redrafts, and if it still fails, the system says it can't back that up.</li>
-</ol>
+<section style="display:grid;gap:12px">
+  <h2>Try the demo</h2>
+  <p class="muted">A made-up belief and a stand-in for the AI model, so you can click through every page a participant sees. Nothing is saved to the study.</p>
+  <div class="cards">
+    <a class="card" id="demo-chat" href="#">
+      <h3>The conversation</h3>
+      <span>Talk to it. Every reply shows which sources its facts were checked against.</span>
+      <span class="go">Start chatting →</span>
+    </a>
+    <a class="card" id="demo-brochure" href="#">
+      <h3>The brochure</h3>
+      <span>The comparison: the same verified quotes on one fixed page, with no conversation.</span>
+      <span class="go">Read it →</span>
+    </a>
+  </div>
+</section>
 
-<h2>What gets measured</h2>
-<p>The participant rates the belief from 0 to 100 before anything else, after reading the brochure, after the conversation, and again seven days later. If the brochure moves the belief as much as the conversation does, the conversation added nothing, and the study says so. Every claim the system drafts is logged, including the ones it blocked, so the share of unsupported claims that got through can be counted. That share should be zero.</p>
+<section style="display:grid;gap:12px">
+  <h2>What happens to every reply</h2>
+  <div class="pipeline">
+    <div class="step"><h3>Write</h3><p>An AI drafts a reply using only quotes a person has checked against the original source.</p></div>
+    <div class="step"><h3>Cut</h3><p>A second AI splits it into single pieces: facts, questions and feelings.</p></div>
+    <div class="step gate"><h3>Check</h3><p>A third AI asks of every fact: does a quote actually <i>say</i> this?</p></div>
+    <div class="step gate"><h3>Send or rewrite</h3><p>All facts pass: sent, with sources named. Any fail: rewritten. Two fails: it says it can't back that up.</p></div>
+  </div>
+  <div class="example">
+    <b>Example: the check catching a fact</b>
+    <div class="verdict ok"><span class="mk">✓</span><div>"After 60 the body needs fewer calories."<small>The source says: "An elderly person needs fewer calories but more micronutrients than someone in mid-life." Passes.</small></div></div>
+    <div class="verdict no"><span class="mk">✗</span><div>"Eating less salt will cure high blood pressure."<small>The source only says salt and blood pressure are strongly <i>associated</i>. It never says <i>cure</i>. Blocked and rewritten.</small></div></div>
+  </div>
+</section>
 
-<p class="muted">Real participants reach this site through a personal link. There is nothing to sign up for here.<br>
-Code: <a href="https://github.com/yashsharmahere/verified-persuasion">github.com/yashsharmahere/verified-persuasion</a></p>
+<section style="display:grid;gap:12px">
+  <h2>How we know if it worked</h2>
+  <p>The participant rates the belief from 0 to 100 four times:</p>
+  <div class="timeline">
+    <div class="tl"><b>Before</b><span>Before hearing any argument.</span></div>
+    <div class="tl"><b>Brochure</b><span>After reading the fixed page.</span></div>
+    <div class="tl"><b>Conversation</b><span>After talking with the AI.</span></div>
+    <div class="tl"><b>Day 7</b><span>A week later. Did it last?</span></div>
+  </div>
+  <p class="muted">If the brochure moves the belief as much as the conversation, the conversation added nothing, and the study says so. Every fact the AI drafts is logged, including the blocked ones, so the share of unsupported facts that reached the participant can be counted. It should be zero.</p>
+</section>
+
 </main>
+<footer class="site">Real participants reach this site through a personal link. There is nothing to sign up for here. · A 100xEngineers capstone · <a href="https://github.com/yashsharmahere/verified-persuasion">Code on GitHub</a></footer>
 <script>
 // Each visit gets its own demo, so visitors never see each other's conversations.
 const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/[^a-z0-9]/g, '').padEnd(16, '0');

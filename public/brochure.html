@@ -1,21 +1,25 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>What the sources say</title><link rel="stylesheet" href="/app.css"></head>
 <body><main>
 <div id="doc"></div>
-<div class="row" id="next-row" hidden><button id="next">I've read it</button></div>
+<div class="row" id="next-row" hidden><button id="next" type="button">I've read it →</button></div>
 </main>
 <script src="/common.js"></script>
 <script>
 const doc = document.getElementById('doc');
+doc.style.display = 'grid';
+doc.style.gap = '16px';
 (async () => {
+  doc.replaceChildren(thinking('Loading…'));
   try {
     const d = await api('/api/brochure?t=' + encodeURIComponent(token));
-    doc.append(el('h1', {}, d.title), el('p', {}, d.intro));
+    doc.replaceChildren(el('h1', {}, d.title), el('p', { class: 'intro' }, d.intro));
     d.items.forEach((it) => {
-      doc.append(el('div', { class: 'item' },
-        el('p', { class: 'quote' }, '“' + it.quote + '”'),
-        el('p', { class: 'muted' }, '— ', el('a', { href: it.source_url, target: '_blank', rel: 'noopener' }, it.source_name))));
+      doc.append(el('figure', { class: 'quote-card', style: 'margin:0' },
+        el('blockquote', {}, it.quote + '”'),
+        el('figcaption', {}, el('cite', {}, 'Source: ',
+          el('a', { href: it.source_url, target: '_blank', rel: 'noopener' }, it.source_name + ' ↗')))));
     });
     document.getElementById('next-row').hidden = false;
   } catch (err) { showError(doc, err); }
