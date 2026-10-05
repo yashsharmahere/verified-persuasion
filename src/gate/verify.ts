@@ -45,13 +45,16 @@ export type Judge = (
  * Checking a claim against each passage in turn cost up to one call per
  * passage, one after another; this is the "check a hundred cheaply" answer.
  */
+/** Must pass `npm run gate:judge`. Haiku 4.5 was tried (2026-10-05) and let a dropped qualifier through. */
+export const JUDGE_MODEL = 'claude-sonnet-4-5';
+
 export const modelJudge: Judge = async (claim, passages) => {
   const anthropic = new Anthropic();
   const listed = passages
     .map((p, i) => `PASSAGE ${i + 1} (from ${p.source_name}):\n"""${p.quote}"""`)
     .join('\n\n');
   const res = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: JUDGE_MODEL,
     max_tokens: 300,
     // A gate should give the same verdict on the same input every time.
     temperature: 0,

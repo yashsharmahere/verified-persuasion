@@ -47,6 +47,13 @@ it answers — is the judge strict enough on near-misses — cannot be answered
 by a stub. Eight cases show the judge is not fooled by these tricks; they
 do not prove it never errs.
 
+**A cheaper judge failed it.** Claude Haiku 4.5 (a third of the price) was
+tried as the judge on 2026-10-05 and scored 7/8: it passed the
+`dropped-qualifier` case, the very error found in this project's own
+fixtures (malnourished older people widened to all ill older people). That
+is critical, so the judge stays on Sonnet 4.5. The harness did its job: it
+stopped a cost saving that would have let a widened claim reach him.
+
 Its failures are graded, and the grading matters: a claim the judge
 *accepts* but shouldn't is critical (unsourced text reaches the
 participant, exit 1). A claim it *rejects* but shouldn't is minor (the
