@@ -10,9 +10,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { selectPassages, eligiblePassages } from '../src/retrieve.js';
-import { runTurn, REFUSAL_TEXT, TurnError, MAX_PARTICIPANT_TURNS, type TurnDeps } from '../src/converse.js';
+import { openingText, runTurn, REFUSAL_TEXT, TurnError, MAX_PARTICIPANT_TURNS, type TurnDeps } from '../src/converse.js';
 import { buildBrochure } from '../src/brochure.js';
-import { buildDraftSystemPrompt, dropLeadingAssistant } from '../src/draft.js';
+import { buildDraftSystemPrompt, PAGE_OPENED, withOpening } from '../src/draft.js';
 import { createHandler } from '../src/http.js';
 import { memoryStore, type Belief } from '../src/store.js';
 import type { Passage } from '../src/types.js';
@@ -178,8 +178,8 @@ test('a drafter that throws sends nothing', async () => {
       throw new Error('model down');
     },
   };
-  await assert.rejects(runTurn(m.store, run, 'hello', d), /model down/);
-  assert.equal(m.turns.filter((t) => t.speaker === 'system').length, 0);
+  await assert.rejects(runTurn(m.store, run, 'hello', d), (e: TurnError) => e.status === 503);
+  assert.equal(m.turns.length, 0, 'nothing is stored, so the message can simply be sent again');
 });
 
 test('ended runs, brochure links, empty and oversized messages are rejected', async () => {
@@ -211,14 +211,19 @@ test('the drafter prompt carries every passage, the reasons, and the gate feedba
   for (const s of ['quote p1', 'quote p2', 'Source p1', 'his words', 'drop claim X']) assert.ok(prompt.includes(s), s);
 });
 
-test('history sent to the model starts with the participant, not the opening', () => {
+test('the model sees the opening the participant replied to, and the history still starts with the user', () => {
   assert.deepEqual(
-    dropLeadingAssistant([
+    withOpening([
       { role: 'assistant', content: 'opening' },
-      { role: 'user', content: 'hi' },
+      { role: 'user', content: 'yes' },
     ]),
-    [{ role: 'user', content: 'hi' }],
+    [
+      { role: 'user', content: PAGE_OPENED },
+      { role: 'assistant', content: 'opening' },
+      { role: 'user', content: 'yes' },
+    ],
   );
+  assert.deepEqual(withOpening([{ role: 'user', content: 'hi' }]), [{ role: 'user', content: 'hi' }]);
 });
 
 // ---------------------------------------------------------------- brochure
@@ -291,7 +296,7 @@ test('a link can only record its own timepoints', async () => {
   assert.equal(baseline.status, 400, 'baseline is recorded at intake, never through a link');
 });
 
-test('a failing model call reaches the browser as a plain 500, with no draft text', async () => {
+test('a failing model call reaches the browser as a plain 503, with no internal detail', async () => {
   const h = createHandler(setup().store, {
     draft: async () => {
       throw new Error('secret internal detail');
@@ -299,8 +304,9 @@ test('a failing model call reaches the browser as a plain 500, with no draft tex
   });
   const r = await h(post('/api/turn', { t: 'tok-treatment-0000000000', message: 'hi' }));
   const text = await r.text();
-  assert.equal(r.status, 500);
+  assert.equal(r.status, 503);
   assert.ok(!text.includes('secret internal detail'));
+  assert.match(text, /try again/);
 });
 
 test('a brochure link cannot be used to chat', async () => {
@@ -309,3 +315,10 @@ test('a brochure link cannot be used to chat', async () => {
   assert.equal(r.status, 400);
 });
 
+
+test('the opening starts from the reason they already gave, instead of asking again', () => {
+  const withReason = openingText('X is true.', 'My father  said so.');
+  assert.match(withReason, /You told us why you believe it: "My father said so\."/);
+  assert.doesNotMatch(withReason, /why do you think this is true/);
+  assert.match(openingText('X is true.'), /why do you think this is true/);
+});

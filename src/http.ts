@@ -56,7 +56,7 @@ export function createHandler(store: Store, deps: TurnDeps = {}) {
         idx: 0,
         speaker: 'system',
         drafted_text: null,
-        sent_text: openingText(belief.statement),
+        sent_text: openingText(belief.statement, (await store.listReasons(belief.id)).find((r) => r.is_primary)?.verbatim),
         redraft_count: 0,
       });
       turns = await store.listTurns(run.id);
@@ -65,6 +65,8 @@ export function createHandler(store: Store, deps: TurnDeps = {}) {
     return json(200, {
       ended: !!run.ended_at,
       turns: turns.map((t) => ({ speaker: t.speaker, text: t.sent_text ?? REFUSAL_TEXT })),
+      // So the page can mark source names in the text, including after a reload.
+      sourceNames: [...new Set((await store.listPassages(belief.id)).map((p) => p.source_name))],
     });
   }
 

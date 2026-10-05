@@ -247,7 +247,11 @@ async function go(btn, call, status) {
   }
 }
 
+let reversalAsked = false;
 function draw(v) {
+  // The reversal test runs on the server once sources are ready; ask once per
+  // visit until it has. Nothing on screen depends on it.
+  if (v.links && !reversalAsked) { reversalAsked = true; journey('reversal', {}).catch(() => {}); }
   document.getElementById('who').hidden = false;
   document.getElementById('who-email').textContent = v.email;
   (render[v.stage] || render.done)(v);

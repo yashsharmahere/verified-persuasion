@@ -10,7 +10,9 @@ import { modelShapeBelief, type BeliefShaper } from './shape.js';
 import {
   fetchPageText,
   isTopic,
+  MAX_SOURCED,
   modelFindCandidates,
+  normalizeForMatch,
   SOURCE_LISTS,
   verifyCandidates,
   type Candidate,
@@ -44,7 +46,7 @@ export interface JourneyDeps {
    */
   dailyLimit?: number;
   shapeBelief?: BeliefShaper;
-  findCandidates?: (statement: string, reasons: string[], domains: string[]) => Promise<Candidate[]>;
+  findCandidates?: (statement: string, reasons: string[], domains: string[], avoid?: string[]) => Promise<Candidate[]>;
   fetchText?: PageFetcher;
   /** For the automatic reversal run. */
   turn?: TurnDeps;
@@ -77,6 +79,10 @@ export function questionsFor(topic: string) {
 }
 
 const MIN_SOURCES = 2;
+/** Below this many verified quotes, search once more for other pages: with three, the AI repeats itself. */
+const GOOD_SOURCES = 5;
+/** Only search again if the first round left time for it within the 300 s function limit. */
+const SECOND_ROUND_BEFORE_MS = 120_000;
 const DEFAULT_DAILY_LIMIT = 20;
 const BUSY = 'Lots of people have taken part today, so new sign-ups are paused until tomorrow. Please come back then.';
 
@@ -260,8 +266,7 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
     },
 
     /**
-     * Find and verify sources, create the runs, build the brochure, run the
-     * reversal test. Each part is skipped if already done, so a retry after a
+     * Find and verify sources, create the runs, build the brochure. Each part is skipped if already done, so a retry after a
      * failure picks up where it stopped.
      */
     async prepare(req) {
@@ -276,8 +281,18 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         await store.setBeliefStatus(belief.id, 'sourcing');
         const reasons = (await store.listReasons(belief.id)).map((r) => r.verbatim);
         const domains = belief.source_whitelist;
+        const started = Date.now();
         const candidates = await findSources(belief.statement, reasons, domains);
         const report = await verifyCandidates(belief.id, candidates, domains, fetchText);
+        if (report.kept.length < GOOD_SOURCES && Date.now() - started < SECOND_ROUND_BEFORE_MS) {
+          const tried = [...new Set(candidates.map((c) => c.url))];
+          const more = await findSources(belief.statement, reasons, domains, tried);
+          candidates.push(...more);
+          const seen = new Set(report.kept.map((k) => normalizeForMatch(k.quote)));
+          const extra = await verifyCandidates(belief.id, more.filter((c) => !seen.has(normalizeForMatch(c.quote))), domains, fetchText);
+          report.kept.push(...extra.kept.slice(0, MAX_SOURCED - report.kept.length));
+          report.rejected.push(...extra.rejected);
+        }
         const log = {
           at: now().toISOString(),
           candidates: candidates.length,
@@ -315,19 +330,32 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         await store.insertAssertions(assertions(t.id));
       }
 
-      // The reversal test, aimed at the participant's own belief: the claim the
-      // system is meant NOT to argue for. Logged; it never blocks the participant.
-      const reversal = run('reversal');
-      if ((await store.listTurns(reversal.id)).length === 0) {
-        try {
-          await runReversal(store, belief, passages, reversal.id, deps.turn ?? {});
-        } catch (err) {
-          console.error('reversal run failed', err);
-        }
-      }
-
       await store.setBeliefStatus(belief.id, 'ready');
       return json(200, (await state(p, u.email)).view);
+    },
+
+    /**
+     * The reversal test, aimed at the participant's own belief: the claim the
+     * system is meant NOT to argue for. The page asks for it in the background
+     * once sources are ready, and again on later visits until it has run, so a
+     * model outage (2026-10-05: out of API credit) only delays it. It never
+     * blocks the participant.
+     */
+    async reversal(req) {
+      const u = await user(req);
+      const p = await participant(req);
+      const s = await state(p, u.email);
+      if (!s.belief || s.belief.status !== 'ready') return json(200, { done: false });
+      const run = (await store.listRuns(s.belief.id)).find((r) => r.condition === 'reversal');
+      if (!run) return json(200, { done: false });
+      if ((await store.listTurns(run.id)).length > 0) return json(200, { done: true });
+      try {
+        await runReversal(store, s.belief, await store.listPassages(s.belief.id), run.id, deps.turn ?? {});
+      } catch (err) {
+        console.error('reversal run failed', err);
+        throw new TurnError(503, 'The reversal run could not complete; it will be retried.');
+      }
+      return json(200, { done: true });
     },
 
     /** No trusted sources were found: let them start over with a different belief. Only allowed then. */

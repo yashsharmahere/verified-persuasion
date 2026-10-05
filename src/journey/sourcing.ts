@@ -31,7 +31,9 @@ export type Topic = (typeof TOPICS)[number];
 export const SOURCE_LISTS: Record<Topic, string[]> = {
   health: [
     'who.int', 'nin.res.in', 'icmr.gov.in', 'mohfw.gov.in', 'fssai.gov.in', 'nih.gov', 'ncbi.nlm.nih.gov', 'cdc.gov',
-    'fda.gov', 'nhs.uk', 'nice.org.uk', 'efsa.europa.eu', 'heart.org', 'diabetes.org', 'cancer.gov',
+    'fda.gov', 'nhs.uk', 'nice.org.uk', 'efsa.europa.eu', 'diabetes.org', 'cancer.gov', 'medlineplus.gov', 'nia.nih.gov',
+    // Medical schools and hospitals: what someone who trusts "a medical expert" recognises.
+    'aiims.edu', 'mayoclinic.org', 'health.harvard.edu', 'hsph.harvard.edu', 'hopkinsmedicine.org', 'clevelandclinic.org',
   ],
   technology: [
     'apple.com', 'samsung.com', 'google.com', 'android.com', 'microsoft.com', 'ieee.org', 'nist.gov', 'energy.gov',
@@ -81,20 +83,27 @@ Rules:
 - Each quote is one to three sentences, 25 to 400 characters.
 - Use the URL of the page you copied it from.
 - Prefer official guidance, standards and systematic reviews over single studies and news. Where an Indian national body on the allowed list covers the topic, include it: the reader is in India.
-- Use at least three different organisations if the allowed sites allow it; no more than four quotes from any one page.
-- Up to 10 quotes from up to 5 pages.
+- Use at least four different organisations if the allowed sites allow it; no more than three quotes from any one page.
+- Up to 12 quotes from up to 6 pages.
 
 Return JSON only, no other text: {"quotes":[{"source_name":"Organisation, document title, year","url":"https://...","quote":"..."}]}`;
 
 /** Ask the model for candidate quotes. Server tools run on Anthropic's side, so this needs no outbound search access. */
-export async function modelFindCandidates(statement: string, reasons: string[], domains: string[]): Promise<Candidate[]> {
+export async function modelFindCandidates(
+  statement: string,
+  reasons: string[],
+  domains: string[],
+  avoid: string[] = [],
+): Promise<Candidate[]> {
   const anthropic = new Anthropic();
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     {
       role: 'user',
       // The tools enforce the list, but the model cannot see it unless told;
       // without this line it returned nothing at all (2026-10-05).
-      content: `BELIEF: "${statement}"\n\nWHY THEY HOLD IT, IN THEIR WORDS:\n${reasons.map((r) => `- ${r}`).join('\n') || '- (not given)'}\n\nALLOWED SITES (and their subdomains): ${domains.join(', ')}`,
+      content: `BELIEF: "${statement}"\n\nWHY THEY HOLD IT, IN THEIR WORDS:\n${reasons.map((r) => `- ${r}`).join('\n') || '- (not given)'}\n\nALLOWED SITES (and their subdomains): ${domains.join(', ')}${
+        avoid.length ? `\n\nALREADY USED OR UNREADABLE, find OTHER pages: ${avoid.join(', ')}` : ''
+      }`,
     },
   ];
   // Server tools can pause a long turn; continue it a few times at most.
@@ -105,8 +114,8 @@ export async function modelFindCandidates(statement: string, reasons: string[], 
       system: SOURCING_PROMPT,
       messages,
       tools: [
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 5, allowed_domains: domains },
-        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6, allowed_domains: domains, max_content_tokens: 20000 },
+        { type: 'web_search_20260209', name: 'web_search', max_uses: 8, allowed_domains: domains },
+        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 8, allowed_domains: domains, max_content_tokens: 20000 },
       ],
       // Not in this SDK version's types yet; sent as-is.
     } as unknown as Anthropic.Beta.MessageCreateParamsNonStreaming);

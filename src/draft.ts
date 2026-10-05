@@ -68,7 +68,8 @@ ${input.aim ?? 'Your aim is to show them what the evidence below says, in respon
 3. If no source addresses what they said, say you don't have a source on that point. Never fill the gap from general knowledge.
 4. Contest the factual claim, never their values, character or way of life. Do not lecture, moralise, or tell them what to eat. For anything about their own health or medical condition, say that is a question for their doctor.
 5. Answer what they just said first. Use one to three facts per reply, not everything at once. You may end with one short question.
-6. Plain, warm, everyday language. At most about 120 words. No bullet points, no headings.`,
+6. Plain, warm, everyday language. At most about 120 words. No bullet points, no headings.
+7. Easy to read on a phone: short paragraphs of one to three sentences, separated by a blank line. When you use a source's exact words, put them in double quotation marks.`,
 
     `SOURCES:
 ${sources || '(no sources available)'}`,
@@ -84,10 +85,8 @@ ${input.feedback}`);
 
 export const modelDraft: Drafter = async (input) => {
   const anthropic = new Anthropic();
-  // The API requires the first message to be from the user; an opening turn the
-  // system showed before the participant spoke is already covered by the prompt.
-  const messages = dropLeadingAssistant(input.history);
-  if (messages.length === 0) throw new Error('draft: no participant message to answer');
+  const messages = withOpening(input.history);
+  if (!messages.some((m) => m.role === 'user')) throw new Error('draft: no participant message to answer');
 
   // Caching: the instructions, reasons and sources are the same on every turn
   // and redraft, and each turn's history extends the last one, so both are
@@ -127,7 +126,14 @@ export const modelDraft: Drafter = async (input) => {
   return text;
 };
 
-export function dropLeadingAssistant(history: ChatMessage[]): ChatMessage[] {
-  const first = history.findIndex((m) => m.role === 'user');
-  return first === -1 ? [] : history.slice(first);
+/**
+ * The API requires the first message to be from the user, but the opening the
+ * participant saw ends with a question ("shall I start with what the sources
+ * say?"), and their first reply ("yes") only makes sense after it. So the
+ * opening is kept, behind a placeholder for the page being opened.
+ */
+export const PAGE_OPENED = '(The participant opened the conversation page.)';
+
+export function withOpening(history: ChatMessage[]): ChatMessage[] {
+  return history[0]?.role === 'assistant' ? [{ role: 'user', content: PAGE_OPENED }, ...history] : history;
 }

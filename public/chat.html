@@ -22,9 +22,36 @@ const form = document.getElementById('form');
 const input = document.getElementById('input');
 const send = document.getElementById('send');
 
+let sourceNames = [];
+const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The AI's text, easier to read: paragraphs, a source's own words set off as
+ * a quote, source names in bold. Built from text nodes only; nothing the model
+ * writes is ever parsed as HTML.
+ */
+function formatReply(text) {
+  const names = sourceNames.filter(Boolean).sort((a, b) => b.length - a.length).map(escapeRe);
+  const pattern = new RegExp('(“[^”]{8,}”|"[^"]{8,}"' + (names.length ? '|' + names.join('|') : '') + ')', 'g');
+  return String(text).split(/\n\s*\n/).filter((x) => x.trim()).map((para) => {
+    const p = el('p');
+    const parts = para.trim().split(pattern);
+    // Highlighted means "a source's own words": only where a source is named.
+    const cited = parts.some((x) => sourceNames.includes(x));
+    for (const part of parts) {
+      if (!part) continue;
+      if (/^[“"]/.test(part) && part.length > 9) p.append(el('q', { class: cited ? 'said' : 'their' }, part.slice(1, -1)));
+      else if (names.length && sourceNames.includes(part)) p.append(el('b', { class: 'src-name' }, part));
+      else p.append(part);
+    }
+    return p;
+  });
+}
+
 function addMessage(speaker, text, sources) {
   const me = speaker === 'participant';
-  const bubble = el('div', { class: 'bubble' }, el('p', {}, text));
+  if (sources) sourceNames = [...new Set([...sourceNames, ...sources.map((x) => x.name)])];
+  const bubble = el('div', { class: 'bubble' }, ...(me ? [el('p', {}, text)] : formatReply(text)));
   if (sources && sources.length) {
     const badge = el('span', { class: 'checked stamp-in' });
     badge.innerHTML = CHECK_SVG + 'Every fact checked against';
@@ -40,6 +67,7 @@ function addMessage(speaker, text, sources) {
   const box = el('div', { class: 'msg ' + (me ? 'me' : 'sys') }, who, bubble);
   log.append(box);
   box.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return box;
 }
 
 function finish() {
@@ -56,6 +84,7 @@ async function load() {
   try {
     const s = await api('/api/session?t=' + encodeURIComponent(token));
     status.replaceChildren();
+    sourceNames = s.sourceNames || [];
     s.turns.forEach((t) => addMessage(t.speaker, t.text));
     if (s.ended) { finish(); return; }
     document.getElementById('composer').hidden = false;
@@ -71,7 +100,7 @@ form.addEventListener('submit', async (e) => {
   input.value = '';
   grow();
   send.disabled = input.disabled = true;
-  addMessage('participant', message);
+  const mine = addMessage('participant', message);
   // The steps every reply goes through, in order. Timing is approximate; the
   // last step stays until the checked reply arrives.
   const stages = ['Writing a reply…', 'Splitting it into single facts…', 'Checking each fact against its source…'];
@@ -91,7 +120,12 @@ form.addEventListener('submit', async (e) => {
     const r = await api('/api/turn', { method: 'POST', body: JSON.stringify({ t: token, message }) });
     clearInterval(ticker); wait.remove();
     addMessage('system', r.text, r.sources);
-  } catch (err) { clearInterval(ticker); wait.remove(); showError(status, err); }
+  } catch (err) {
+    // Nothing was stored: take the message back so it can be sent again.
+    clearInterval(ticker); wait.remove(); mine?.remove();
+    input.value = message; grow();
+    showError(status, err);
+  }
   send.disabled = input.disabled = false;
   input.focus();
 });
