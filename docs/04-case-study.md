@@ -93,6 +93,12 @@ people with an acute or chronic illness". That is the same error found in
 the fixtures (above). The judge stayed on Sonnet 4.5. The harness stopped a
 cost saving that would have let a widened claim reach him.
 
+Sonnet 5.5, a third cheaper per token, also scored 8/8, but cost slightly
+more per check: it used about 35% more input tokens and twice the output for
+the same cases ($0.016 against $0.014). The cheaper-looking model was not
+the cheaper judge. What made checking cheap was fewer calls, not a cheaper
+model.
+
 **Checking a hundred cheaply.** The first judge checked a claim against
 each passage in turn: up to one model call per passage, one after another.
 It now makes one call per claim with every passage numbered, and must name
@@ -287,3 +293,5 @@ Dated, in order. Each line is something learned, and where it is written up.
   argued the sourced opposite. (§4)
 - **2026-10-05** Haiku 4.5 as judge: 7/8, critical miss on
   `dropped-qualifier`. Judge kept on Sonnet 4.5. (§2)
+- **2026-10-05** Sonnet 5.5 as judge: 8/8, but about 10% more per check
+  (more tokens for the same text). Judge kept on Sonnet 4.5. (§2)

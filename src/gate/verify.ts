@@ -45,7 +45,10 @@ export type Judge = (
  * Checking a claim against each passage in turn cost up to one call per
  * passage, one after another; this is the "check a hundred cheaply" answer.
  */
-/** Must pass `npm run gate:judge`. Haiku 4.5 was tried (2026-10-05) and let a dropped qualifier through. */
+/**
+ * Must pass `npm run gate:judge`. Tried 2026-10-05: Haiku 4.5 let a dropped
+ * qualifier through; Sonnet 5.5 passed but cost more per check (more tokens).
+ */
 export const JUDGE_MODEL = 'claude-sonnet-4-5';
 
 export const modelJudge: Judge = async (claim, passages) => {

@@ -54,6 +54,12 @@ fixtures (malnourished older people widened to all ill older people). That
 is critical, so the judge stays on Sonnet 4.5. The harness did its job: it
 stopped a cost saving that would have let a widened claim reach him.
 
+**Sonnet 5.5 was tried too** (2026-10-05): 8/8 with thinking off and with
+low-effort thinking, but no cheaper. Its per-token price is a third lower,
+yet it used about 35% more input tokens and twice the output for the same
+cases ($0.016 against Sonnet 4.5's $0.014 for the 8). Per-token price is not
+cost per check. The judge stays on Sonnet 4.5.
+
 Its failures are graded, and the grading matters: a claim the judge
 *accepts* but shouldn't is critical (unsourced text reaches the
 participant, exit 1). A claim it *rejects* but shouldn't is minor (the
