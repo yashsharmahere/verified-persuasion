@@ -103,19 +103,20 @@ export type NewPassage = Omit<Passage, 'id'> & { belief_id: string };
 
 /**
  * What the self-serve journey needs on top of the conversation's Store: a
- * participant found by their login, their belief and its preparation status,
+ * participant found by their key, their belief and its preparation status,
  * and the runs whose tokens the existing pages already use.
  */
 export interface JourneyStore {
-  getParticipantByUser(userId: string): Promise<Participant | null>;
+  getParticipantByKey(keyHash: string): Promise<Participant | null>;
   createParticipant(p: {
-    user_id: string;
-    email: string;
+    key_hash: string;
     label: string;
     consented_at: string;
     disclosed_ai: boolean;
   }): Promise<Participant>;
   getBeliefByParticipant(participantId: string): Promise<JourneyBelief | null>;
+  /** How many participants and beliefs were created since a time: the daily cap on an open site. */
+  countCreatedSince(since: string): Promise<{ participants: number; beliefs: number }>;
   createBelief(b: {
     participant_id: string;
     statement: string;
@@ -153,9 +154,19 @@ function check<T>(res: { data: T; error: { message: string } | null }, what: str
 export function supabaseStore(db: SupabaseClient = supabaseFromEnv()): FullStore {
   const beliefCols = 'id, statement, domain, source_whitelist, instrument, status';
   return {
-    async getParticipantByUser(userId) {
-      const res = await db.from('participants').select('id, consented_at').eq('user_id', userId).maybeSingle();
-      return check(res, 'getParticipantByUser') as Participant | null;
+    async getParticipantByKey(keyHash) {
+      const res = await db.from('participants').select('id, consented_at').eq('key_hash', keyHash).maybeSingle();
+      return check(res, 'getParticipantByKey') as Participant | null;
+    },
+
+    async countCreatedSince(since) {
+      const count = async (table: string) => {
+        const res = await db.from(table).select('id', { count: 'exact', head: true }).gte('created_at', since);
+        if (res.error) throw new Error(`countCreatedSince: ${res.error.message}`);
+        return res.count ?? 0;
+      };
+      const [participants, beliefs] = await Promise.all([count('participants'), count('beliefs')]);
+      return { participants, beliefs };
     },
 
     async createParticipant(p) {
@@ -302,7 +313,7 @@ export function memoryStore(seed: {
   runs?: (Run & { access_token: string })[];
 } = {}) {
   const beliefs: (Belief & { status?: BeliefStatus; participant_id?: string })[] = [...(seed.beliefs ?? [])];
-  const participants: (Participant & { user_id: string; email: string })[] = [];
+  const participants: (Participant & { key_hash: string })[] = [];
   const measureAt: { belief_id: string; timepoint: Timepoint; at: string }[] = [];
   const reasons = [...(seed.reasons ?? [])];
   const passages = [...(seed.passages ?? [])];
@@ -313,12 +324,16 @@ export function memoryStore(seed: {
   let n = 0;
 
   const store: FullStore = {
-    async getParticipantByUser(userId) {
-      const p = participants.find((x) => x.user_id === userId);
+    async getParticipantByKey(keyHash) {
+      const p = participants.find((x) => x.key_hash === keyHash);
       return p ? { id: p.id, consented_at: p.consented_at } : null;
     },
+    // The memory store keeps no clock of its own, so it counts everything.
+    async countCreatedSince() {
+      return { participants: participants.length, beliefs: beliefs.filter((b) => b.participant_id).length };
+    },
     async createParticipant(p) {
-      const row = { id: `participant-${++n}`, consented_at: p.consented_at, user_id: p.user_id, email: p.email };
+      const row = { id: `participant-${++n}`, consented_at: p.consented_at, key_hash: p.key_hash };
       participants.push(row);
       return { id: row.id, consented_at: row.consented_at };
     },

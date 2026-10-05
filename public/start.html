@@ -4,31 +4,33 @@
 <body class="journey">
 <header class="topbar">
   <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><circle cx="16" cy="16" r="11.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".35" stroke-width="1"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified Persuasion</a>
-  <span id="who" class="who-bar" hidden><span id="who-email"></span> · <button type="button" class="linklike" id="signout">Sign out</button></span>
+  <span id="who" class="who-bar" hidden><button type="button" class="linklike" id="copy-top">Copy my private link</button></span>
 </header>
 <main><div id="screen" class="screen" aria-live="polite"></div></main>
-<script src="/vendor/supabase.js"></script>
 <script src="/common.js"></script>
 <script>
-// Public by design: the publishable key only works through the database's
-// access rules, which let the browser read nothing. Everything goes through /api/journey.
-const SUPABASE_URL = 'https://dlreebwfwspyzsbuoixc.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Aiy9ihgEJIVCWtDy4AIDsg_UyGvzpC7';
-// Implicit flow: the emailed link works on any device, not only the one that asked for it.
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { flowType: 'implicit', persistSession: true, detectSessionInUrl: true } });
+// No login. Agreeing to take part returns a random key; this browser keeps it
+// and sends it with every step. A private link carrying the key brings the
+// person back from any device. Only the server's hash of it is stored.
+let memKey = '';
+function getKey() { try { return localStorage.getItem('vp-key') || memKey; } catch { return memKey; } }
+function setKey(k) { memKey = k; try { k ? localStorage.setItem('vp-key', k) : localStorage.removeItem('vp-key'); } catch {} }
+const fromLink = new URLSearchParams(location.hash.slice(1)).get('k');
+if (fromLink) { setKey(fromLink); history.replaceState(null, '', location.pathname); }
+const myLink = () => location.origin + '/start.html#k=' + encodeURIComponent(getKey());
 const screen = document.getElementById('screen');
 try { localStorage.setItem('vp-journey', '1'); } catch {}
 
 async function journey(step, body) {
-  const { data } = await sb.auth.getSession();
   const res = await fetch('/api/journey?step=' + step, {
     method: body === undefined ? 'GET' : 'POST',
-    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (data.session?.access_token || '') },
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + getKey() },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   let out = {};
   try { out = await res.json(); } catch {}
   if (!res.ok) { const e = new Error(out.error || 'Something went wrong. Please try again.'); e.status = res.status; throw e; }
+  if (out.key) setKey(out.key);
   return out;
 }
 
@@ -44,31 +46,21 @@ const steps = (n) => el('div', { class: 'stepper', 'aria-label': 'Step ' + n + '
   ...[1, 2, 3].map((i) => el('span', { class: i < n ? 'done' : i === n ? 'now' : '' }, String(i))));
 function errorBox(err) { const box = el('div'); showError(box, err); return box; }
 
-// ---------------------------------------------------------------- login
+// ---------------------------------------------------------------- private link
 
-function loginScreen(message) {
-  const input = el('input', { type: 'email', id: 'email', autocomplete: 'email', placeholder: 'you@example.com', required: '' });
-  const btn = el('button', { type: 'submit' }, 'Send me a login link');
-  const status = el('div');
-  const form = el('form', { class: 'stack' }, el('label', { for: 'email' }, 'Your email'), input, btn);
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    btn.disabled = true;
-    status.replaceChildren(thinking('Checking…'));
-    try {
-      const email = input.value.trim();
-      const { allowed } = await journey('can_join', { email });
-      if (!allowed) { status.replaceChildren(p('This study is invite-only for now, and that email is not on the list.', 'error')); btn.disabled = false; return; }
-      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/start.html' } });
-      if (error) throw error;
-      show(el('span', { class: 'label' }, 'Check your email'), el('h1', {}, 'A login link is on its way'),
-        p('We sent it to ' + email + '. Open the email and tap the link. It brings you straight back here.'),
-        p('Nothing after a few minutes? Check your spam folder.', 'muted'));
-    } catch (err) { status.replaceChildren(errorBox(err)); btn.disabled = false; }
-  });
-  show(el('span', { class: 'label' }, 'Invite-only pilot'), el('h1', {}, 'Can you be convinced?'),
-    p('Tell us something you believe. An AI will try to change your mind, using only facts it can show you from trusted sources. No passwords: we email you a link.'),
-    message ? p(message, 'error') : null, form, status);
+async function copyLink(btn) {
+  const label = btn.textContent;
+  try { await navigator.clipboard.writeText(myLink()); btn.textContent = 'Copied ✓'; }
+  catch { prompt('Copy your private link:', myLink()); }
+  setTimeout(() => { btn.textContent = label; }, 2000);
+}
+
+function linkCard(text) {
+  const input = el('input', { type: 'text', readonly: '', value: myLink(), 'aria-label': 'Your private link' });
+  input.addEventListener('focus', () => input.select());
+  const btn = el('button', { type: 'button', class: 'secondary' }, 'Copy link');
+  btn.addEventListener('click', () => copyLink(btn));
+  return el('div', { class: 'link-card' }, el('span', { class: 'label' }, 'Your private link'), p(text), el('div', { class: 'link-row' }, input, btn));
 }
 
 // ---------------------------------------------------------------- steps
@@ -77,13 +69,14 @@ const render = {
   consent() {
     const btn = el('button', { type: 'button' }, 'I agree, let’s start');
     btn.addEventListener('click', () => go(btn, () => journey('consent', {})));
-    show(el('span', { class: 'label' }, 'Before we start'), el('h1', {}, 'How this works'),
+    show(el('span', { class: 'label' }, 'Free · no sign-up · about 20 minutes'), el('h1', {}, 'Can you be convinced?'),
+      p('Tell us something you believe. An AI will try to change your mind, using only facts it can show you from trusted sources. Here’s how it works:'),
       el('ol', { class: 'promise' },
         el('li', {}, 'You tell us one thing you believe, and why.'),
         el('li', {}, 'You read a short page of what trusted sources say about it.'),
         el('li', {}, 'You chat with an ', el('b', {}, 'AI'), ' that will try to change your mind. It may only say things it can back with a named source.'),
         el('li', {}, 'You answer a few 0–100 questions along the way, and once more a week later.')),
-      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time.', 'muted'),
+      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time. We don’t ask for your name or email; your answers are kept for the study.', 'muted'),
       btn);
   },
 
@@ -202,7 +195,8 @@ const render = {
   waiting(v) {
     const due = new Date(v.due).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
     show(steps(3), el('span', { class: 'label' }, 'Almost done'), el('h1', {}, 'See you in a week'),
-      p('The last step is the same few questions, once more, a week from now. Come back here on or after ' + due + ' and log in with the same email.'));
+      p('The last step is the same few questions, once more, a week from now: on or after ' + due + '.'),
+      linkCard('This link brings you back to your answers, on any phone or computer. Bookmark it or send it to yourself on WhatsApp. Keep it private: anyone with it can see your answers.'));
   },
 
   delayed(v) {
@@ -248,27 +242,23 @@ function retryButton() {
 async function go(btn, call, status) {
   btn.disabled = true;
   try { draw(await call()); }
-  catch (err) { btn.disabled = false; (status || screen).append(errorBox(err)); }
+  catch (err) {
+    if (err.status === 401) { setKey(''); return render.consent(); }
+    btn.disabled = false; (status || screen).append(errorBox(err));
+  }
 }
 
 function draw(v) {
-  document.getElementById('who').hidden = false;
-  document.getElementById('who-email').textContent = v.email;
+  document.getElementById('who').hidden = !getKey() || v.stage === 'consent';
   (render[v.stage] || render.done)(v);
 }
 
-document.getElementById('signout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+document.getElementById('copy-top').addEventListener('click', (e) => copyLink(e.currentTarget));
 
 (async () => {
   show(thinking('Loading…'));
-  const { data } = await sb.auth.getSession();
-  if (!data.session) return loginScreen();
   try { draw(await journey('me')); }
-  catch (err) {
-    if (err.status === 401) return loginScreen();
-    if (err.status === 403) { await sb.auth.signOut(); return loginScreen('This study is invite-only for now, and that email is not on the list.'); }
-    show(errorBox(err));
-  }
+  catch (err) { show(errorBox(err)); }
 })();
 </script>
 </body></html>

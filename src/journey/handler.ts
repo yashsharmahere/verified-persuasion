@@ -1,11 +1,11 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { buildBrochure } from '../brochure.js';
 import { assertionRows, TurnError, type TurnDeps } from '../converse.js';
 import { modelDraft } from '../draft.js';
 import { runGate } from '../gate/index.js';
 import { measureRows } from '../http.js';
 import { selectPassages } from '../retrieve.js';
-import type { FullStore, InstrumentItem, JourneyBelief, Timepoint } from '../store.js';
+import type { FullStore, InstrumentItem, JourneyBelief, Participant, Timepoint } from '../store.js';
 import { modelShapeBelief, type BeliefShaper } from './shape.js';
 import {
   fetchPageText,
@@ -18,24 +18,26 @@ import {
 } from './sourcing.js';
 
 /**
- * The self-serve journey: log in, consent, state a belief, say why, rate it,
+ * The self-serve journey, open to anyone: consent, state a belief, say why, rate it,
  * then the system finds sources, builds the brochure, runs the reversal test,
  * and hands over the same brochure, chat and form pages a token link uses.
  *
  * The server decides which step a person is on from what is stored, so no one
  * can skip a step or answer one twice.
+ *
+ * No login. Consenting creates a participant and a random key; the browser
+ * keeps the key and sends it with every step, and a private link carrying it
+ * lets the person come back from any device for the day-7 questions. Only
+ * the key's hash is stored.
  */
 
-export interface User {
-  id: string;
-  email: string;
-}
-
 export interface JourneyDeps {
-  /** Resolve a Supabase access token to the logged-in user, or null. */
-  verifyUser: (accessToken: string) => Promise<User | null>;
-  /** Who may take part. During the pilot, an allow-list of emails. */
-  isAllowed: (email: string) => boolean;
+  /**
+   * New beliefs allowed in any 24 hours, across everyone. Each one costs a
+   * sourcing search and a reversal run, so an open site needs a ceiling.
+   * New participants are capped at three times this.
+   */
+  dailyLimit?: number;
   shapeBelief?: BeliefShaper;
   findCandidates?: (statement: string, reasons: string[], domains: string[]) => Promise<Candidate[]>;
   fetchText?: PageFetcher;
@@ -70,6 +72,10 @@ export function questionsFor(topic: string) {
 }
 
 const MIN_SOURCES = 2;
+const DEFAULT_DAILY_LIMIT = 20;
+const BUSY = 'Lots of people have taken part today, so new sign-ups are paused until tomorrow. Please come back then.';
+
+export const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');
 const DAY_MS = 864e5;
 const MAX_ANSWER = 2000;
 
@@ -117,16 +123,25 @@ const json = (status: number, body: unknown) =>
 
 export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
   const shape = deps.shapeBelief ?? modelShapeBelief;
-  const find = deps.findCandidates ?? modelFindCandidates;
+  const findSources = deps.findCandidates ?? modelFindCandidates;
   const fetchText = deps.fetchText ?? fetchPageText;
   const now = deps.now ?? (() => new Date());
 
-  async function user(req: Request): Promise<User> {
-    const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
-    const u = token ? await deps.verifyUser(token) : null;
-    if (!u) throw new TurnError(401, 'Please log in.');
-    if (!deps.isAllowed(u.email)) throw new TurnError(403, 'This study is invite-only for now.');
-    return u;
+  const limit = deps.dailyLimit ?? DEFAULT_DAILY_LIMIT;
+  const since = () => new Date(now().getTime() - DAY_MS).toISOString();
+
+  const keyOf = (req: Request) => (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+
+  /** The participant whose key came with the request, or null. */
+  async function find(req: Request) {
+    const key = keyOf(req);
+    return key.length >= 20 ? store.getParticipantByKey(hashKey(key)) : null;
+  }
+
+  async function participant(req: Request) {
+    const p = await find(req);
+    if (!p) throw new TurnError(401, 'We couldn’t find your progress. Please start again.');
+    return p;
   }
 
   async function body(req: Request): Promise<Record<string, unknown>> {
@@ -139,8 +154,7 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
   }
 
   /** Everything the page needs to show the right step. */
-  async function state(u: User) {
-    const participant = await store.getParticipantByUser(u.id);
+  async function state(participant: Participant | null) {
     const belief = participant ? await store.getBeliefByParticipant(participant.id) : null;
     const reasons = belief ? (await store.listReasons(belief.id)).length : 0;
     const times = belief ? await store.measureTimes(belief.id) : {};
@@ -151,7 +165,6 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       participant,
       belief,
       view: {
-        email: u.email,
         stage,
         due: due ?? null,
         statement: belief?.statement ?? null,
@@ -163,43 +176,39 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
   }
 
   const steps: Record<string, (req: Request) => Promise<Response>> = {
-    /** Before sending a login email: is this address invited? Keeps strangers from getting emails. */
-    async can_join(req) {
-      const email = String((await body(req)).email ?? '').trim().toLowerCase();
-      return json(200, { allowed: !!email && deps.isAllowed(email) });
-    },
-
     async me(req) {
-      return json(200, (await state(await user(req))).view);
+      return json(200, (await state(await find(req))).view);
     },
 
+    /** Agreeing creates the participant and their key. The key is returned once; only its hash is kept. */
     async consent(req) {
-      const u = await user(req);
-      if (!(await store.getParticipantByUser(u.id))) {
-        await store.createParticipant({
-          user_id: u.id,
-          email: u.email,
-          label: `web-${u.id.slice(0, 8)}`,
-          consented_at: now().toISOString(),
-          disclosed_ai: true,
-        });
-      }
-      return json(200, (await state(u)).view);
+      const existing = await find(req);
+      if (existing) return json(200, (await state(existing)).view);
+      if ((await store.countCreatedSince(since())).participants >= limit * 3) throw new TurnError(429, BUSY);
+      const key = randomBytes(24).toString('base64url');
+      const p = await store.createParticipant({
+        key_hash: hashKey(key),
+        label: `web-${randomBytes(4).toString('hex')}`,
+        consented_at: now().toISOString(),
+        disclosed_ai: true,
+      });
+      return json(200, { ...(await state(p)).view, key });
     },
 
     /** Shape what they typed into one statement. Saves nothing: they confirm or edit it first. */
     async propose(req) {
-      const u = await user(req);
-      if ((await state(u)).view.stage !== 'belief') throw new TurnError(409, 'Your belief is already recorded.');
+      const p = await participant(req);
+      if ((await state(p)).view.stage !== 'belief') throw new TurnError(409, 'Your belief is already recorded.');
       const text = String((await body(req)).text ?? '').trim();
       if (text.length < 5) throw new TurnError(400, 'Please write your belief in a sentence or two.');
       return json(200, await shape(text.slice(0, 1000)));
     },
 
     async belief(req) {
-      const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p);
       if (s.view.stage !== 'belief' || !s.participant) throw new TurnError(409, 'Your belief is already recorded.');
+      if ((await store.countCreatedSince(since())).beliefs >= limit) throw new TurnError(429, BUSY);
       const b = await body(req);
       const statement = String(b.statement ?? '').trim();
       if (statement.length < 10 || statement.length > 300) throw new TurnError(400, 'Please write the statement in one sentence.');
@@ -214,12 +223,12 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         source_whitelist: SOURCE_LISTS[topic],
         instrument,
       });
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p)).view);
     },
 
     async reasons(req) {
-      const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p);
       if (s.view.stage !== 'reasons' || !s.belief) throw new TurnError(409, 'Your answers are already recorded.');
       const answers = ((await body(req)).answers ?? {}) as Record<string, unknown>;
       const rows = questionsFor(s.belief.domain).map((q) => ({ q, text: typeof answers[q.code] === 'string' ? (answers[q.code] as string).trim() : '' }))
@@ -229,15 +238,15 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         })
         .map(({ q, text }) => ({ belief_id: s.belief!.id, code: q.code, verbatim: text.slice(0, MAX_ANSWER), is_primary: q.code === 'why' }));
       await store.insertReasons(rows);
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p)).view);
     },
 
     async baseline(req) {
-      const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p);
       if (s.view.stage !== 'baseline' || !s.belief) throw new TurnError(409, 'These answers are already recorded.');
       await store.insertMeasures(measureRows(s.belief.id, 'baseline', s.belief.instrument, await body(req)));
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p)).view);
     },
 
     /**
@@ -246,8 +255,8 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
      * failure picks up where it stopped.
      */
     async prepare(req) {
-      const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p);
       if (s.view.stage !== 'sourcing' || !s.belief) return json(200, s.view);
       const belief = s.belief;
 
@@ -256,12 +265,12 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         await store.setBeliefStatus(belief.id, 'sourcing');
         const reasons = (await store.listReasons(belief.id)).map((r) => r.verbatim);
         const domains = belief.source_whitelist;
-        const report = await verifyCandidates(belief.id, await find(belief.statement, reasons, domains), domains, fetchText);
+        const report = await verifyCandidates(belief.id, await findSources(belief.statement, reasons, domains), domains, fetchText);
         console.log(`sourcing ${belief.id}: kept ${report.kept.length}, rejected ${report.rejected.length}`,
           report.rejected.map((r) => `${r.why}: ${r.candidate.url}`));
         if (report.kept.length < MIN_SOURCES) {
           await store.setBeliefStatus(belief.id, 'no_sources');
-          return json(200, (await state(u)).view);
+          return json(200, (await state(p)).view);
         }
         await store.insertPassages(report.kept);
         passages = await store.listPassages(belief.id);
@@ -300,16 +309,16 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
       }
 
       await store.setBeliefStatus(belief.id, 'ready');
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p)).view);
     },
 
     /** No trusted sources were found: let them start over with a different belief. Only allowed then. */
     async restart(req) {
-      const u = await user(req);
-      const s = await state(u);
+      const p = await participant(req);
+      const s = await state(p);
       if (s.view.stage !== 'no_sources' || !s.belief) throw new TurnError(409, 'You can only start over when no sources were found.');
       await store.deleteBelief(s.belief.id);
-      return json(200, (await state(u)).view);
+      return json(200, (await state(p)).view);
     },
   };
 
