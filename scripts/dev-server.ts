@@ -4,6 +4,8 @@
  *
  *   npm run dev               # against Supabase (needs .env)
  *   npm run dev -- --demo     # in-memory demo data, stubbed model: no keys at all
+ *
+ * /api/demo (the public demo the homepage links to) works in both modes.
  */
 import 'dotenv/config';
 import { createServer } from 'node:http';
@@ -11,7 +13,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createHandler } from '../src/http.js';
 import { supabaseStore } from '../src/store.js';
-import { demoSetup } from './demo.js';
+import { demoSetup, createDemoHandler } from '../src/demo.js';
 
 const demo = process.argv.includes('--demo');
 const port = Number(process.env.PORT ?? 3000);
@@ -21,6 +23,7 @@ const { store, deps, links } = demo
   ? await demoSetup()
   : { store: supabaseStore(), deps: {}, links: [] as string[] };
 const handle = createHandler(store, deps);
+const demoHandle = createDemoHandler();
 
 const types: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -34,7 +37,7 @@ createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/')) {
     const chunks: Buffer[] = [];
     for await (const c of req) chunks.push(c as Buffer);
-    const r = await handle(
+    const r = await (url.pathname === '/api/demo' ? demoHandle : handle)(
       new Request(url, {
         method: req.method,
         headers: req.headers as Record<string, string>,

@@ -14,6 +14,7 @@ import { runTurn, REFUSAL_TEXT, TurnError, MAX_PARTICIPANT_TURNS, type TurnDeps 
 import { buildBrochure } from '../src/brochure.js';
 import { buildDraftSystemPrompt, dropLeadingAssistant } from '../src/draft.js';
 import { createHandler } from '../src/http.js';
+import { createDemoHandler } from '../src/demo.js';
 import { memoryStore, type Belief } from '../src/store.js';
 import type { Passage } from '../src/types.js';
 
@@ -292,4 +293,49 @@ test('a brochure link cannot be used to chat', async () => {
   const h = createHandler(setup().store, deps(['quote p1']));
   const r = await h(post('/api/turn', { t: 'tok-brochure-00000000000', message: 'hi' }));
   assert.equal(r.status, 400);
+});
+
+// The public demo: in-memory, one copy per visitor, forwarded to the same handlers.
+
+const demoGet = (h: (r: Request) => Promise<Response>, query: string) => h(new Request(`http://x/api/demo?${query}`));
+const demoPost = (h: (r: Request) => Promise<Response>, route: string, body: unknown) =>
+  h(new Request(`http://x/api/demo?route=${route}`, { method: 'POST', body: JSON.stringify(body) }));
+const A = 'demo-aaaaaaaaaaaaaaaa';
+const B = 'demo-bbbbbbbbbbbbbbbb';
+
+test('demo: a visitor can chat, and every sent claim quotes its source', async () => {
+  const h = createDemoHandler();
+  const s = (await (await demoGet(h, `route=session&t=${A}-t`)).json()) as { turns: unknown[] };
+  assert.equal(s.turns.length, 1, 'the opening');
+  const r = await demoPost(h, 'turn', { t: `${A}-t`, message: 'Why would that change with age?' });
+  assert.equal(r.status, 200);
+  const turn = (await r.json()) as { sources: unknown[] };
+  assert.ok(turn.sources.length > 0);
+});
+
+test('demo: visitors never see each other’s conversations', async () => {
+  const h = createDemoHandler();
+  await demoPost(h, 'turn', { t: `${A}-t`, message: 'hello from A' });
+  const b = (await (await demoGet(h, `route=session&t=${B}-t`)).json()) as { turns: unknown[] };
+  assert.ok(!JSON.stringify(b).includes('hello from A'));
+  assert.equal(b.turns.length, 1);
+});
+
+test('demo: the brochure and the measure form work on demo links', async () => {
+  const h = createDemoHandler();
+  const doc = await demoGet(h, `route=brochure&t=${A}-b`);
+  assert.equal(doc.status, 200);
+  const inst = (await (await demoGet(h, `route=instrument&tp=post_brochure&t=${A}-b`)).json()) as { items: { key: number }[] };
+  const scores = Object.fromEntries(inst.items.map((it) => [it.key, 50]));
+  const m = await demoPost(h, 'measure', { t: `${A}-b`, tp: 'post_brochure', scores });
+  assert.equal(m.status, 200);
+});
+
+test('demo: real tokens, malformed demo tokens and unknown routes get a 404', async () => {
+  const h = createDemoHandler();
+  assert.equal((await demoGet(h, 'route=session&t=tok-treatment-0000000000')).status, 404);
+  assert.equal((await demoGet(h, 'route=session&t=demo-short-t')).status, 404);
+  assert.equal((await demoGet(h, `route=session&t=${A}-x`)).status, 404);
+  assert.equal((await demoGet(h, `route=admin&t=${A}-t`)).status, 404);
+  assert.equal((await demoPost(h, 'turn', 'not an object')).status, 404);
 });
