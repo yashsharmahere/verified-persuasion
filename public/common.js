@@ -2,18 +2,11 @@
 const params = new URLSearchParams(location.search);
 const token = params.get('t') || '';
 
-// Demo links (demo-*) go to the public demo, which keeps its data in memory
-// and never reaches the participant database. Same handlers, same pages.
+// Demo links (demo-*) exist only under `npm run dev -- --demo`: in-memory data, stubbed model.
 const isDemo = token.startsWith('demo-');
 
-function apiPath(path) {
-  if (!isDemo) return path;
-  const [route, query] = path.replace(/^\/api\//, '').split('?');
-  return '/api/demo?route=' + route + (query ? '&' + query : '');
-}
-
 async function api(path, opts = {}) {
-  const res = await fetch(apiPath(path), {
+  const res = await fetch(path, {
     ...opts,
     headers: { 'content-type': 'application/json', ...(opts.headers || {}) },
   });
@@ -55,7 +48,7 @@ function thinking(text) {
 
 if (isDemo) {
   document.querySelector('main').prepend(el('div', { class: 'demo-banner' },
-    el('span', {}, el('b', {}, 'You’re in the demo. '),
+    el('span', {}, el('b', {}, 'Local demo. '),
       'The belief is made up, and a stand-in replaces the AI model: it only quotes its sources word for word. Nothing here is saved. ',
       el('a', { href: '/' }, 'Back to the start'))));
 }

@@ -113,9 +113,13 @@ counts only what reached him: that should be 0. The gap is the gate's work.
 Live at https://verified-persuasion-app.vercel.app (Vercel project
 `verified-persuasion-app`, team `yash-sh-projects`; pushes to `main` deploy to
 production). Env vars set: `ANTHROPIC_API_KEY`, `SUPABASE_URL`,
-`SUPABASE_SERVICE_ROLE_KEY`, `BASE_URL`. The homepage links into a public
-demo (`api/demo.ts`): made-up belief, stubbed model, in memory, one copy per
-visitor, never touches Supabase. Real participant links are unchanged.
+`SUPABASE_SERVICE_ROLE_KEY`, `BASE_URL`.
+
+The homepage explains the system with a worked example. A public demo with
+a stubbed model was tried and removed: the stub ignores what you type, so it
+looked broken. A real-model demo, with a spend cap, can come back after
+`gate:judge` and the reversal run pass. Local click-through:
+`npm run dev -- --demo`.
 
 ### Not done, not blocked
 
@@ -287,7 +291,7 @@ it, and reporting it honestly is a graded criterion.
 
 ## Deliverables (submission template)
 
-1. Live project link — https://verified-persuasion-app.vercel.app (demo live; real run pending)
+1. Live project link — https://verified-persuasion-app.vercel.app (explainer live; real run pending)
 2. GitHub repo — this
 3. Demo video — not started
 4. Case study — not started

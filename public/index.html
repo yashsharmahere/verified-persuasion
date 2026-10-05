@@ -16,11 +16,12 @@
     <h1>An AI that argues only with what it can prove.</h1>
     <p class="lead">It tries to change one person's mind about one everyday belief. Every fact it wants to say is checked against a real, human-verified source first. If it can't back a fact up, it doesn't say it.</p>
     <div class="row">
-      <a class="button" id="hero-try" href="#try">Try the demo</a>
-      <a class="button secondary" href="#how">How it works</a>
+      <a class="button" href="#how">How it works</a>
+      <a class="button secondary" href="https://github.com/yashsharmahere/verified-persuasion">See the code</a>
     </div>
   </div>
   <div class="mock" aria-label="Example of a checked reply">
+    <span class="label">Example</span>
     <div class="msg me"><span class="who">You</span><div class="bubble">I'm 64 and I eat exactly what I ate at 30. Why change?</div></div>
     <div class="blocked"><span class="x">✕</span><span><b>Blocked before sending:</b> "Less salt will cure high blood pressure." The source says salt and blood pressure are <i>linked</i>, never that cutting it <i>cures</i>.</span></div>
     <div class="msg sys"><span class="who"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M10.5 16.5l3.8 3.8 7.4-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>AI assistant</span>
@@ -30,30 +31,6 @@
     </div>
   </div>
 </section>
-
-<div class="band" id="try">
-  <div class="inner">
-    <div class="section-head">
-      <span class="label">Try it</span>
-      <h2>Click through what a participant sees</h2>
-      <p>The demo uses a made-up belief and a stand-in for the AI model, so it's free to try and nothing is saved.</p>
-    </div>
-    <div class="cards">
-      <a class="card" id="demo-chat" href="#try">
-        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span>
-        <h3>The conversation</h3>
-        <p>Talk to it. Every reply shows which sources its facts were checked against.</p>
-        <span class="go">Start chatting →</span>
-      </a>
-      <a class="card" id="demo-brochure" href="#try">
-        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></span>
-        <h3>The brochure</h3>
-        <p>The comparison: the same verified quotes on one fixed page, with no conversation.</p>
-        <span class="go">Read it →</span>
-      </a>
-    </div>
-  </div>
-</div>
 
 <section class="section" id="how">
   <div class="section-head">
@@ -89,10 +66,4 @@
 
 </main>
 <footer class="site"><span>Real participants reach this site through a personal link. There is nothing to sign up for here.</span><span>A 100xEngineers capstone · <a href="https://github.com/yashsharmahere/verified-persuasion">Code</a></span></footer>
-<script>
-// Each visit gets its own demo, so visitors never see each other's conversations.
-const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/[^a-z0-9]/g, '').padEnd(16, '0');
-document.getElementById('demo-chat').href = '/chat.html?t=demo-' + id + '-t';
-document.getElementById('demo-brochure').href = '/brochure.html?t=demo-' + id + '-b';
-</script>
 </body></html>
