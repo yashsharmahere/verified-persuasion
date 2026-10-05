@@ -2,8 +2,18 @@
 const params = new URLSearchParams(location.search);
 const token = params.get('t') || '';
 
+// Demo links (demo-*) go to the public demo, which keeps its data in memory
+// and never reaches the participant database. Same handlers, same pages.
+const isDemo = token.startsWith('demo-');
+
+function apiPath(path) {
+  if (!isDemo) return path;
+  const [route, query] = path.replace(/^\/api\//, '').split('?');
+  return '/api/demo?route=' + route + (query ? '&' + query : '');
+}
+
 async function api(path, opts = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(apiPath(path), {
     ...opts,
     headers: { 'content-type': 'application/json', ...(opts.headers || {}) },
   });
@@ -24,4 +34,11 @@ function el(tag, attrs = {}, ...children) {
 
 function showError(where, err) {
   where.replaceChildren(el('p', { class: 'error' }, err.message || String(err)));
+}
+
+if (isDemo) {
+  document.querySelector('main').prepend(el('div', { class: 'demo-banner' },
+    el('b', {}, 'Demo. '),
+    'A made-up belief, and a stand-in for the AI model that only quotes its sources word for word. Nothing here reaches the study’s database. ',
+    el('a', { href: '/' }, 'Back to the start')));
 }
