@@ -276,13 +276,20 @@ export function createJourneyHandler(store: FullStore, deps: JourneyDeps) {
         await store.setBeliefStatus(belief.id, 'sourcing');
         const reasons = (await store.listReasons(belief.id)).map((r) => r.verbatim);
         const domains = belief.source_whitelist;
-        const report = await verifyCandidates(belief.id, await findSources(belief.statement, reasons, domains), domains, fetchText);
-        console.log(`sourcing ${belief.id}: kept ${report.kept.length}, rejected ${report.rejected.length}`,
-          report.rejected.map((r) => `${r.why}: ${r.candidate.url}`));
+        const candidates = await findSources(belief.statement, reasons, domains);
+        const report = await verifyCandidates(belief.id, candidates, domains, fetchText);
+        const log = {
+          at: now().toISOString(),
+          candidates: candidates.length,
+          kept: report.kept.map((p) => p.source_url),
+          rejected: report.rejected.map((r) => ({ why: r.why, url: r.candidate.url, quote: r.candidate.quote.slice(0, 160) })),
+        };
+        console.log(`sourcing ${belief.id}`, JSON.stringify(log));
         if (report.kept.length < MIN_SOURCES) {
-          await store.setBeliefStatus(belief.id, 'no_sources');
+          await store.setBeliefStatus(belief.id, 'no_sources', log);
           return json(200, (await state(p, u.email)).view);
         }
+        await store.setBeliefStatus(belief.id, 'sourcing', log);
         await store.insertPassages(report.kept);
         passages = await store.listPassages(belief.id);
       }

@@ -152,6 +152,8 @@ export function parseCandidates(raw: string): Candidate[] {
  */
 export function normalizeForMatch(text: string): string {
   return text
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&nbsp;|&#160;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&quot;|&#34;/g, '"')
@@ -163,6 +165,8 @@ export function normalizeForMatch(text: string): string {
     .replace(/[‐-―−]/g, '-')
     .replace(/(\w)-\s*\n\s*(\w)/g, '$1$2') // "pro-\ntein" -> "protein"
     .replace(/\s+/g, ' ')
+    .replace(/ ([.,;:!?)\]])/g, '$1') // a tag removed before punctuation leaves a stray space
+    .replace(/([(\[]) /g, '$1')
     .trim()
     .toLowerCase();
 }
@@ -180,7 +184,12 @@ export const fetchPageText: PageFetcher = async (url) => {
   const res = await fetch(url, {
     redirect: 'follow',
     signal: AbortSignal.timeout(25_000),
-    headers: { 'user-agent': 'Mozilla/5.0 (compatible; VerifiedPersuasion/1.0; quote check)' },
+    // Government sites often refuse anything that doesn't look like a browser.
+    headers: {
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
+      accept: 'text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8',
+      'accept-language': 'en-IN,en;q=0.9',
+    },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const type = res.headers.get('content-type') ?? '';
@@ -190,12 +199,16 @@ export const fetchPageText: PageFetcher = async (url) => {
     const { text } = await extractText(pdf, { mergePages: true });
     return text;
   }
-  const html = await res.text();
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ');
+  return htmlToText(await res.text());
 };
+
+/** Page text from HTML. Inline tags (links, bold) vanish without a gap, so a sentence with a link in it still reads as one sentence. */
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<(script|style|noscript|svg)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<\/?(a|b|strong|em|i|span|abbr|sup|sub|u|mark|small|cite|code|q|time)\b[^>]*>/gi, '')
+    .replace(/<[^>]+>/g, ' ');
+}
 
 export interface VerifyReport {
   kept: NewPassage[];
@@ -215,7 +228,7 @@ export async function verifyCandidates(
   max = MAX_SOURCED,
 ): Promise<VerifyReport> {
   const allowed = new Set(domains);
-  const pages = new Map<string, Promise<string | null>>();
+  const pages = new Map<string, Promise<string | { error: string }>>();
   const kept: NewPassage[] = [];
   const rejected: VerifyReport['rejected'] = [];
   const seen = new Set<string>();
@@ -237,9 +250,9 @@ export async function verifyCandidates(
     const key = normalizeForMatch(quote);
     if (seen.has(key)) { reject('duplicate'); continue; }
 
-    if (!pages.has(c.url)) pages.set(c.url, fetchText(c.url).catch(() => null));
+    if (!pages.has(c.url)) pages.set(c.url, fetchText(c.url).catch((e: unknown) => ({ error: String((e as Error)?.message ?? e).slice(0, 120) })));
     const page = await pages.get(c.url)!;
-    if (page === null) { reject('page could not be downloaded'); continue; }
+    if (typeof page !== 'string') { reject(`page could not be downloaded (${page.error})`); continue; }
     if (!quoteFoundIn(quote, page)) { reject('not found word for word on the page'); continue; }
 
     seen.add(key);
