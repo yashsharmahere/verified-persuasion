@@ -33,11 +33,12 @@ const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function formatReply(text) {
   const names = sourceNames.filter(Boolean).sort((a, b) => b.length - a.length).map(escapeRe);
   const pattern = new RegExp('(“[^”]{8,}”|"[^"]{8,}"' + (names.length ? '|' + names.join('|') : '') + ')', 'g');
+  // Highlighted means "a source's own words": only in a reply that names a
+  // source (the opening quotes the participant, never a source).
+  const cited = names.length > 0 && String(text).split(pattern).some((x) => sourceNames.includes(x));
   return String(text).split(/\n\s*\n/).filter((x) => x.trim()).map((para) => {
     const p = el('p');
     const parts = para.trim().split(pattern);
-    // Highlighted means "a source's own words": only where a source is named.
-    const cited = parts.some((x) => sourceNames.includes(x));
     for (const part of parts) {
       if (!part) continue;
       if (/^[“"]/.test(part) && part.length > 9) p.append(el('q', { class: cited ? 'said' : 'their' }, part.slice(1, -1)));

@@ -532,3 +532,12 @@ button.google svg { flex: none; }
   .hero-art svg { max-width: 260px; }
   .hero-text { max-width: none; }
 }
+
+/* Generated illustrations: backgrounds made transparent when added. */
+.hero-art img, .step-art img { display: block; width: 100%; height: auto; }
+.hero-art img { max-width: 520px; margin-inline: auto; }
+@media (max-width: 860px) { .hero-art img { max-width: 300px; } }
+.step-art { height: 180px; min-width: 0; }
+.step-art img { width: 100%; height: 100%; object-fit: contain; }
+@media (max-width: 960px) { .step-art { height: 200px; } }
+@media (max-width: 560px) { .step-art { height: 90px; } }

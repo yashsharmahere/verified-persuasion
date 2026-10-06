@@ -42,8 +42,7 @@ function show(...nodes) {
 }
 /** A screen with its text on one side and a drawing on the other (stacked on phones). */
 function hero(art, ...nodes) {
-  const pic = el('div', { class: 'hero-art', 'aria-hidden': 'true' });
-  pic.innerHTML = STEP_ART[art] || '';
+  const pic = el('div', { class: 'hero-art', 'aria-hidden': 'true' }, artNode(art));
   show(el('div', { class: 'hero-split' }, el('div', { class: 'hero-text' }, ...nodes.filter((n) => n != null)), pic));
   document.body.classList.add('wide-step');
 }
@@ -86,8 +85,7 @@ const render = {
       ['answer', 'Answer questions', 'You answer a few 0–100 questions along the way, and once more a week later.'],
     ];
     const cards = el('ol', { class: 'step-cards' }, ...steps.map(([art, title, text], i) => {
-      const pic = el('div', { class: 'step-art' });
-      pic.innerHTML = STEP_ART[art];
+      const pic = el('div', { class: 'step-art' }, artNode('step-' + art, art));
       return el('li', { class: 'step-card ' + art }, el('span', { class: 'step-num' }, String(i + 1)), pic, el('h3', {}, title), p(text));
     }));
     show(el('div', { class: 'consent-head' },
