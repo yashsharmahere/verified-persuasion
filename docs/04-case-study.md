@@ -3,7 +3,7 @@
 Draft skeleton. Sections follow the brief's six grading criteria. Everything
 marked **[RESULT]** waits on the real run; everything else is already true.
 Fill the gaps with numbers from `npm run metrics`, quotes from the transcript,
-and his words from the intake. Do not round a disappointing number into a
+and their words from the intake. Do not round a disappointing number into a
 good one: the brief grades honesty about the result, not the result.
 
 ---
@@ -13,36 +13,108 @@ good one: the brief grades honesty about the result, not the result.
 **[RESULT]** One participant (someone I know, not family) believed *[target statement,
 exact wording]*. Baseline [x]/100. After a fixed brochure of the same sources:
 [y]. After a conversation with a system that may only say what it can trace to
-a named, human-checked source: [z]. Seven days later: [w]. Of [n] claims the
-system sent him, [k] were unsupported (UCR [k/n]%). Of [m] claims it drafted,
-the gate blocked [b]. Pointed at a false claim, it [refused / ...].
+a named source, every quote checked word for word against the page it came
+from: [z]. Seven days later: [w]. Of [n] claims the system sent them, [k] were
+unsupported (UCR [k/n]%). Of [m] claims it drafted, the gate blocked [b].
+Pointed at the participant's own (unsupported) belief, it [refused / ...].
 
 ---
 
-## 1. Problem understanding: why he holds it
+## The brief's questions, answered
 
-The brief asks why he holds the belief, not why it is wrong. Design paper §3
-gives three mechanisms, and the intake was built to tell them apart:
+The brief (§04) asks five questions and one more about effect sizes. Short
+answers, each pointing to where the evidence is. **[RESULT]** marks what the
+real run fills in.
 
-1. He has never met the counter-evidence.
-2. He has met it and distrusts the source.
-3. The belief is doing work for him (identity, habit).
+**1. Why does this person hold this belief? Not why it is wrong.**
+The system asks before it argues. After the belief is stated, the participant
+answers on screen: why they believe it (required), where the idea came from,
+whose advice they trust and whose they don't, what would change their mind,
+and whether a doctor (for health beliefs) or an expert ever told them anything.
+The conversation is told to answer *their* reasons first, and the opening
+quotes their own reason back instead of asking again. **[RESULT]** their
+answers and which mechanism they point to (§1).
 
-**[RESULT]** What the intake found, in his words:
-- Q2, what "everything" includes: "…"
-- Q6–Q7, whom he trusts and doesn't: "…"
-- Q9, what age means to him: "…"
-- Q11, what would change his mind: "…"
-- Q13, why he holds it, one or two sentences: "…"
+**2. What counts as one claim, and how would you check a hundred cheaply?**
+One claim is one checkable factual statement. A decomposer splits each draft
+reply into fragments and labels them: assertion, question, reflection of what
+they said, or connective ("I don't have a source on that"). Only assertions
+are checked. The judge checks each assertion in **one** model call against
+every passage at once and must name the passage that says it; naming none
+fails closed. A reply costs about ₹2–3 and 9–15 seconds. A hundred claims
+cost a few rupees and a few minutes, with no person reading them (§2).
+
+**3. Which parts need a model at all, and which are a lookup you are dressing up?**
+Lookups, no model: whether a quote really appears on the source page (the
+server downloads the page and matches it word for word), whether a site is on
+the trusted list, the step order, scoring and the metrics. Model needed:
+finding candidate quotes, restating the belief as one sentence, writing the
+reply, splitting it into claims, and judging whether a quote *says* a claim
+rather than merely being about it ("linked to" is not "causes"). That last
+judgement is the one place a lookup cannot do the work, and it is tested on
+cases built to break it (`gate:judge`, 8/8).
+
+**4. How would you notice an unsupported claim, and how fast?**
+Before it is sent, on every reply. A claim with no passage behind it is
+blocked and the reply is redrafted with the reason; after two failed redrafts
+the participant gets a fixed "I can't back that up" instead. Every fragment is
+logged, with whether it was sent, supported, and by which passage, so the
+unsupported-claim rate is a database query, not a re-read (§2, §5).
+
+**5. What result, six weeks from now, would force you to abandon the hypothesis?**
+Stated in advance (CONTEXT.md, "The falsifier"): the fixed brochure moves the
+belief as much as the conversation does, or the reversal run produces a
+fluent, sourced-looking argument for the unsupported claim instead of
+refusing. Not a small shift, not partial regression at day 7, not the
+participant still disagreeing. **[RESULT]** which happened (§3, §4).
+
+**What must you measure yourself before treating a published effect size as a target?**
+The best-known result (about a 20% durable reduction; Costello et al., 2024)
+carries an editorial expression of concern, so it is not used as a target, and
+with one participant there is no effect size to compare with anyway. What we
+measure instead, for this participant:
+- **The starting point**: the 0–100 rating before anything else.
+- **The noise**: four unrelated decoy statements rated alongside the belief
+  every time. A change only counts if the belief moved and the decoys did not.
+- **A boring alternative**: the brochure, the same checked quotes as a plain
+  page, rated before the conversation.
+- **Durability**: the same rating seven days later.
+- **Who got in**: how the participant and the belief were chosen, and which
+  candidates were rejected and why (§1, findings log).
+
+**Where each grading criterion is answered**
+
+| Criterion | Where |
+|---|---|
+| Problem understanding | §1, and question 1 above |
+| Source discipline | §2: automatic sourcing from a fixed list of trusted sites per topic; every quote matched word for word against its page; every sent claim tied to a named passage |
+| Baseline discipline | §3: the brochure versus the conversation, and which won |
+| Reversal test | §4: run automatically at the participant's own unsupported belief |
+| Product quality | §5: end to end on a real person, with the day-7 measurement |
+
+---
+
+## 1. Problem understanding: why they hold it
+
+The brief asks why they hold the belief, not why it is wrong. Design paper §3
+gives three mechanisms, and the on-screen intake was built to tell them apart:
+
+1. They have never met the counter-evidence.
+2. They have met it and distrust the source.
+3. The belief is doing work for them (identity, habit, a memorable experience).
+
+**[RESULT]** What the intake found, in their words:
+- Why they believe it: "…"
+- Where the idea came from: "…"
+- Whose advice they trust, and whose they don't: "…"
+- What would change their mind: "…"
+- What a doctor or expert ever told them: "…"
 
 **[RESULT]** Which mechanism this is, and what it changed:
-- Which candidate statement became the target, and why. If his real belief
-  was T3 ("eating more keeps you strong"), say so: protein needs genuinely
-  rise with age (ESPEN, PROT-AGE), so contesting it head-on would have been
-  wrong.
-- Which sources he trusts, and so which went on the shelf. ICMR-NIN was the
-  default because it is India's own government nutrition body.
-- Anything from Q12 (a doctor's advice) that limited what the system may say.
+- The belief as typed, and the one-sentence version they confirmed.
+- Which sources were found, and whether any are ones they said they trust.
+- The partly-true part: mouth germs do reach the stomach; the unwarranted part
+  is the causal link to stomach ache. Whether the conversation kept to that line.
 
 ---
 
@@ -91,7 +163,7 @@ dropped-qualifier case, widening "older people who are malnourished or at
 risk of malnutrition because they have acute or chronic illness" to "older
 people with an acute or chronic illness". That is the same error found in
 the fixtures (above). The judge stayed on Sonnet 4.5. The harness stopped a
-cost saving that would have let a widened claim reach him.
+cost saving that would have let a widened claim reach the participant.
 
 Sonnet 5.5, a third cheaper per token, also scored 8/8, but cost slightly
 more per check: it used about 35% more input tokens and twice the output for
@@ -139,8 +211,8 @@ every ICMR-NIN passage shares one PDF link, so a reply resting on Guidelines
 11 and 16 named only 16. The claims were checked against the right passage;
 only the label was wrong. Fixed, with a test.
 
-**Before his run** (dry run with the real model, an in-memory store, a
-made-up stand-in for him, nothing saved; 2026-10-05):
+**Before the real run** (dry run with the real model, an in-memory store, a
+made-up stand-in participant, nothing saved; 2026-10-05):
 
 | | Before the fixes | After |
 | --- | --- | --- |
@@ -148,14 +220,14 @@ made-up stand-in for him, nothing saved; 2026-10-05):
 | Seconds per turn | 18 s; 77–88 s with redrafts | 9–15 s, no redrafts |
 | Cost | not measured | $0.22 for 4 turns + 1 reversal (≈ $0.04 a turn) |
 
-**[RESULT]** Numbers from his run:
+**[RESULT]** Numbers from the participant's run:
 
 | | Value |
 | --- | --- |
 | Judge harness (`gate:judge`): cases passed | 8/8 (Sonnet 4.5) |
 | Of those, unsupported claims the judge let through (critical) | 0 |
 | Time per claim checked | 1.6 s |
-| Claims drafted in his conversation | [m] |
+| Claims drafted in their conversation | [m] |
 | Claims blocked by the gate | [b] |
 | Claims sent | [n] |
 | Unsupported claims sent (UCR) | [k] ([k/n]%) |
@@ -169,7 +241,7 @@ gate's work.
 ## 3. Baseline discipline: the brochure
 
 The brochure is a fixed page of the same verified quotes, no conversation, no
-reason-matching. He read it first and scored, then had the conversation and
+reason-matching. They read it first and scored, then had the conversation and
 scored again (within-subjects, brochure first; design paper §8 explains why).
 So the conversation's effect is the movement past what the brochure already
 gave.
@@ -191,10 +263,10 @@ and that sentence says so.
 
 ## 4. Reversal test
 
-Before he saw anything, the system was pointed at a claim the shelf does not
+Before the participant saw anything, the system was pointed at a claim the shelf does not
 support: **[RESULT] "…"**
 
-**Dry run first (2026-10-05, in memory, not his data).** Aimed at "older
+**Dry run first (2026-10-05, in memory, not participant data).** Aimed at "older
 adults should eat more salt, because salt keeps the heart strong", the
 drafter declined in all three attempts ("I can't make that case honestly")
 and argued the opposite, from the sources. The first version of the gate
@@ -220,15 +292,17 @@ the hypothesis.
   passages, one in-memory copy per visitor) and then removed. The stand-in
   ignored what you typed, so "wassssssup" got a protein statistic. It looked
   broken, not illustrative. A demo is only worth showing with the real model.
-- The participant pages were designed for a reader over 60: a low-vision
-  typeface (Atkinson Hyperlegible) at 19–20 px, high contrast, large buttons,
-  and the 0–100 form's wording unchanged so later forms match his paper
-  baseline.
-- He used a personal link, told first that it is a machine and what it is for.
-- Day-7 measurement on the same form, same wording, ideally collected by
-  someone else and in writing.
+- Self-serve: the participant logs in with Google, states the belief, answers
+  the intake and rates it on screen; nothing is set up by hand. Told first
+  that it is a machine and what it is for.
+- Participant pages: large type (19–20 px), high contrast, large buttons,
+  illustrated steps; the 0–100 pages stay plain so design can't sway answers.
+- Day-7 measurement on the same form and wording, on any device with the same
+  Google account. The reminder is sent by hand.
+- Recovers from model outages: a failed reply stores nothing and hands the
+  message back; the reversal run retries on a later visit.
 
-**[RESULT]** What went wrong in his session, and what the transcript shows
+**[RESULT]** What went wrong in their session, and what the transcript shows
 about tone, length and refusals.
 
 ---
@@ -239,9 +313,9 @@ Already true:
 
 - **The fixtures.** The gate's test data failed its own standard (section 2).
   It changed process: every quote now carries how and when it was checked.
-- **The shelf half-agreed with him.** The first shelf was mostly protein
-  quotes, and protein needs *rise* with age. That supports "eat more", which is
-  part of what he believes. The shelf had to move to energy, salt and sugar
+- **The shelf half-agreed with the first candidate participant** (Yash's
+  father). The first shelf was mostly protein quotes, and protein needs *rise*
+  with age. That supports "eat more", which was part of what he believed. The shelf had to move to energy, salt and sugar
   (ICMR-NIN Guidelines 11 and 16).
 - **The gate is not deterministic** (section 2).
 - **The gate contradicted the drafter** (section 2): one component's
@@ -249,11 +323,14 @@ Already true:
   the real model, which no stub test would have shown.
 - **Cheaper is not free.** A judge a third of the price failed the one case
   built from this project's own mistake (section 2).
-- **Scope.** The brief asks for one belief and one real person. A system
-  that builds a shelf for any belief by searching the web was considered and
-  rejected for now: it would turn "every quote was checked by a person" into
-  "every quote was accepted by a model", which is the failure the brief is
-  about.
+- **Scope, reversed.** A system that builds the shelf for any belief by
+  searching the web was first rejected: it would turn "every quote was checked
+  by a person" into "every quote was accepted by a model", the failure the
+  brief is about. It was built anyway once the check could stay mechanical:
+  the model only *proposes* quotes from a fixed list of trusted sites per
+  topic; the server downloads each page and keeps a quote only if it appears
+  word for word. That proves the quote exists as written, not that it was read
+  in context; the judge and the site list bound the rest.
 
 **[RESULT]** What the run changed. Which sub-claim moved, which didn't, and
 what that says about relevance versus volume.
@@ -266,7 +343,7 @@ paper §4 splits it into:
 | | Sub-claim | Tested? |
 | --- | --- | --- |
 | H1 | Constraining claims does not cost persuasion (vs. an unconstrained arm) | **No.** No unconstrained arm was built, and one person cannot be persuaded three times. |
-| H2 | Relevance to his reason beats volume (vs. reason-blind retrieval) | **No.** Same reason. |
+| H2 | Relevance to their reason beats volume (vs. reason-blind retrieval) | **No.** Same reason. |
 | H3 | The conversation beats a fixed brochure | **Yes**, within one person, brochure first. |
 
 With one participant, H3 and the reversal were tested; H1 and H2 need more
@@ -274,10 +351,12 @@ participants and remain untested.
 
 ### Threats to validity
 
-- **He is family.** He may move his number to please his son. Mitigations:
-  scores on paper, unrelated control items, the open "what changed your
-  thinking?" question compared with his baseline reasoning, and day 7 collected
-  by someone else. These reduce the risk; they do not remove it.
+- **The participant knows the researcher.** Not family (Yash's father was
+  dropped partly for this), but they may still move their number to please.
+  Mitigations: they take part alone on their own device, unrelated control
+  items, the open "what changed your thinking?" question compared with their
+  stated reasons, and a day-7 rating on their own. These reduce the risk; they
+  do not remove it.
   **[RESULT]** Did the controls move?
 - **n = 1.** Nothing here generalises. It is a demonstration that the pipeline
   works end to end on a real person, with receipts.
