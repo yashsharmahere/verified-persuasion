@@ -520,3 +520,15 @@ button.google svg { flex: none; }
   .step-card h3 { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 1.08rem; }
   .step-card p { grid-column: 2; grid-row: 3; font-size: .92rem; }
 }
+
+/* Screens with a drawing: text left, picture right; picture on top on phones */
+.hero-split { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 56px; align-items: center; min-height: 62vh; }
+.hero-text { display: grid; gap: 18px; align-content: center; max-width: 560px; }
+.hero-art svg { width: 100%; height: auto; display: block; max-width: 480px; margin-inline: auto; }
+.hero-text > .stack, .hero-text > form { width: 100%; }
+@media (max-width: 860px) {
+  .hero-split { grid-template-columns: 1fr; gap: 12px; min-height: 0; }
+  .hero-art { order: -1; }
+  .hero-art svg { max-width: 260px; }
+  .hero-text { max-width: none; }
+}
