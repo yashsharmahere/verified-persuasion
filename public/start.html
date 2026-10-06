@@ -9,6 +9,7 @@
 <main><div id="screen" class="screen" aria-live="polite"></div></main>
 <script src="/vendor/supabase.js"></script>
 <script src="/common.js"></script>
+<script src="/steps-art.js"></script>
 <script>
 // Public by design: the publishable key only works through the database's
 // access rules, which let the browser read nothing. Everything goes through /api/journey.
@@ -32,11 +33,19 @@ async function journey(step, body) {
 }
 
 function show(...nodes) {
+  document.body.classList.remove('wide-step');
   screen.classList.remove('enter');
   void screen.offsetWidth; // restart the entrance animation
   screen.replaceChildren(...nodes.filter((n) => n != null));
   screen.classList.add('enter');
   window.scrollTo({ top: 0 });
+}
+/** A screen with its text on one side and a drawing on the other (stacked on phones). */
+function hero(art, ...nodes) {
+  const pic = el('div', { class: 'hero-art', 'aria-hidden': 'true' });
+  pic.innerHTML = STEP_ART[art] || '';
+  show(el('div', { class: 'hero-split' }, el('div', { class: 'hero-text' }, ...nodes.filter((n) => n != null)), pic));
+  document.body.classList.add('wide-step');
 }
 const p = (text, cls) => el('p', cls ? { class: cls } : {}, text);
 const steps = (n) => el('div', { class: 'stepper', 'aria-label': 'Step ' + n + ' of 3' },
@@ -56,7 +65,7 @@ function loginScreen(message) {
     const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/start.html' } });
     if (error) { btn.disabled = false; status.replaceChildren(errorBox(error)); }
   });
-  show(el('span', { class: 'label' }, 'Free · about 20 minutes'), el('h1', {}, 'Can you be convinced?'),
+  hero('welcome', el('span', { class: 'label' }, 'Free · about 20 minutes'), el('h1', {}, 'Can you be convinced?'),
     p('Tell us something you believe. An AI will try to change your mind, using only facts it can show you from trusted sources.'),
     message ? p(message, 'error') : null,
     btn,
@@ -68,16 +77,26 @@ function loginScreen(message) {
 
 const render = {
   consent() {
-    const btn = el('button', { type: 'button' }, 'I agree, let’s start');
+    const btn = el('button', { type: 'button', class: 'wide-btn' }, 'I agree, let’s start');
     btn.addEventListener('click', () => go(btn, () => journey('consent', {})));
-    show(el('span', { class: 'label' }, 'Before we start'), el('h1', {}, 'How this works'),
-      el('ol', { class: 'promise' },
-        el('li', {}, 'You tell us one thing you believe, and why.'),
-        el('li', {}, 'You read a short page of what trusted sources say about it.'),
-        el('li', {}, 'You chat with an ', el('b', {}, 'AI'), ' that will try to change your mind. It may only say things it can back with a named source.'),
-        el('li', {}, 'You answer a few 0–100 questions along the way, and once more a week later.')),
-      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time. Your answers are kept for the study, without your name.', 'muted'),
+    const steps = [
+      ['belief', 'Tell us what you believe', 'You tell us one thing you believe, and why.'],
+      ['sources', 'Read trusted sources', 'You read a short page of what trusted sources say about it.'],
+      ['chat', 'Chat with an AI', 'You talk with an AI that will try to change your mind. It may only say things it can back with a named source.'],
+      ['answer', 'Answer questions', 'You answer a few 0–100 questions along the way, and once more a week later.'],
+    ];
+    const cards = el('ol', { class: 'step-cards' }, ...steps.map(([art, title, text], i) => {
+      const pic = el('div', { class: 'step-art' });
+      pic.innerHTML = STEP_ART[art];
+      return el('li', { class: 'step-card ' + art }, el('span', { class: 'step-num' }, String(i + 1)), pic, el('h3', {}, title), p(text));
+    }));
+    show(el('div', { class: 'consent-head' },
+        el('span', { class: 'label' }, 'Before we start'), el('h1', {}, 'How this works'),
+        p('A quick overview of what you’ll do. It takes about 20 minutes.', 'lead')),
+      cards,
+      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time. Your answers are kept for the study, without your name.', 'muted center'),
       btn);
+    document.body.classList.add('wide-step');
   },
 
   belief() {
@@ -95,7 +114,7 @@ const render = {
         confirmBelief(ta.value, r);
       } catch (err) { status.replaceChildren(errorBox(err)); btn.disabled = false; }
     });
-    show(el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'What do you believe?'),
+    hero('belief', el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'What do you believe?'),
       p('Something everyday, about health, food, money or safety. Write it however you like.'), form);
     ta.focus();
   },
@@ -154,7 +173,7 @@ const render = {
   async sourcing() {
     const list = el('ol', { class: 'checklist' },
       ...['Searching trusted sources on this topic', 'Downloading each page', 'Checking every quote word for word', 'Preparing your reading page'].map((t) => el('li', {}, t)));
-    show(el('span', { class: 'label' }, 'One moment'), el('h1', {}, 'Finding the evidence'),
+    hero('search', el('span', { class: 'label' }, 'One moment'), el('h1', {}, 'Finding the evidence'),
       p('This takes a minute or two. Every quote you’ll see is downloaded from its source and checked word for word.'), list);
     const items = [...list.children];
     let k = 0;
@@ -172,7 +191,7 @@ const render = {
   },
 
   no_sources(v) {
-    show(el('span', { class: 'label' }, 'Honest answer'), el('h1', {}, 'Not enough trusted sources'),
+    hero('empty', el('span', { class: 'label' }, 'Honest answer'), el('h1', {}, 'Not enough trusted sources'),
       el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'),
       p('We couldn’t find at least two passages from trusted sources that we could check word for word. Rather than argue without evidence, the AI won’t argue at all.'),
       p('You can try a different belief. Your answers about this one will be cleared.', 'muted'),
@@ -180,35 +199,33 @@ const render = {
   },
 
   brochure(v) {
-    show(steps(1), el('span', { class: 'label' }, 'Step 1 of 3'), el('h1', {}, 'Read what the sources say'),
+    hero('sources', steps(1), el('span', { class: 'label' }, 'Step 1 of 3'), el('h1', {}, 'Read what the sources say'),
       el('h2', { class: 'belief-quote' }, '“' + v.statement + '”'),
       p('A short page of quotes from trusted sources, each with a link to where it comes from. Then a few quick questions.'),
       el('a', { class: 'button', href: '/brochure.html?t=' + encodeURIComponent(v.links.brochure) }, 'Open the page →'));
   },
 
   chat(v) {
-    show(steps(2), el('span', { class: 'label' }, 'Step 2 of 3'), el('h1', {}, 'Talk with the AI'),
+    hero('chat', steps(2), el('span', { class: 'label' }, 'Step 2 of 3'), el('h1', {}, 'Talk with the AI'),
       p('It will try to change your mind, using only facts it can show you a source for. Talk as long as you like, then press “I’m done talking”.'),
       el('a', { class: 'button', href: '/chat.html?t=' + encodeURIComponent(v.links.chat) }, 'Start the conversation →'));
   },
 
   waiting(v) {
     const due = new Date(v.due).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-    show(steps(3), el('span', { class: 'label' }, 'Almost done'), el('h1', {}, 'See you in a week'),
+    hero('calendar', steps(3), el('span', { class: 'label' }, 'Almost done'), el('h1', {}, 'See you in a week'),
       p('The last step is the same few questions, once more, a week from now. Come back here on or after ' + due + ' and continue with the same Google account, on any phone or computer.'));
   },
 
   delayed(v) {
-    show(steps(3), el('span', { class: 'label' }, 'Step 3 of 3'), el('h1', {}, 'One last time'),
+    hero('answer', steps(3), el('span', { class: 'label' }, 'Step 3 of 3'), el('h1', {}, 'One last time'),
       p('The same few questions as before. Your honest view today, whatever it is.'),
       el('a', { class: 'button', href: '/measure.html?tp=delayed&t=' + encodeURIComponent(v.links.chat) }, 'Answer the questions →'));
   },
 
   done() {
-    const mark = el('div', { class: 'done-card' });
-    mark.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="var(--accent)"/><path d="M14 25l7 7 13-15" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    mark.append(el('h2', {}, 'All done. Thank you!'), p('Your answers are recorded. Thank you for taking part.'));
-    show(mark);
+    hero('done', el('span', { class: 'label' }, 'Finished'), el('h1', {}, 'All done. Thank you!'),
+      p('Your answers are recorded. Thank you for taking part.'));
   },
 };
 
@@ -221,7 +238,7 @@ function confirmBelief(raw, r) {
   redo.addEventListener('click', () => render.belief());
   const form = el('form', { class: 'stack' }, el('label', { for: 'statement' }, 'Is this what you believe? You can edit it.'), ta, el('div', { class: 'row' }, yes, redo), status);
   form.addEventListener('submit', (e) => { e.preventDefault(); go(yes, () => journey('belief', { statement: ta.value, raw_text: raw, category: r.category }), status); });
-  show(el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'In one sentence'), form);
+  hero('belief', el('span', { class: 'label' }, 'Your belief'), el('h1', {}, 'In one sentence'), form);
   ta.focus();
 }
 
