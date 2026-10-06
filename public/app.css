@@ -541,3 +541,11 @@ button.google svg { flex: none; }
 .step-art img { width: 100%; height: 100%; object-fit: contain; }
 @media (max-width: 960px) { .step-art { height: 200px; } }
 @media (max-width: 560px) { .step-art { height: 90px; } }
+
+/* homepage illustration, and the example in its own section */
+.hero-pic img { width: 100%; height: auto; display: block; }
+.see { justify-items: center; text-align: center; }
+.see .section-head { justify-items: center; }
+.see .mock { width: 100%; max-width: 560px; text-align: left; }
+.home .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 40px; }
+@media (max-width: 860px) { .home .hero { grid-template-columns: 1fr; } }
