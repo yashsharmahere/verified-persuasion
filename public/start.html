@@ -9,6 +9,7 @@
 <main><div id="screen" class="screen" aria-live="polite"></div></main>
 <script src="/vendor/supabase.js"></script>
 <script src="/common.js"></script>
+<script src="/steps-art.js"></script>
 <script>
 // Public by design: the publishable key only works through the database's
 // access rules, which let the browser read nothing. Everything goes through /api/journey.
@@ -68,15 +69,24 @@ function loginScreen(message) {
 
 const render = {
   consent() {
-    const btn = el('button', { type: 'button' }, 'I agree, let’s start');
+    const btn = el('button', { type: 'button', class: 'wide-btn' }, 'I agree, let’s start');
     btn.addEventListener('click', () => go(btn, () => journey('consent', {})));
-    show(el('span', { class: 'label' }, 'Before we start'), el('h1', {}, 'How this works'),
-      el('ol', { class: 'promise' },
-        el('li', {}, 'You tell us one thing you believe, and why.'),
-        el('li', {}, 'You read a short page of what trusted sources say about it.'),
-        el('li', {}, 'You chat with an ', el('b', {}, 'AI'), ' that will try to change your mind. It may only say things it can back with a named source.'),
-        el('li', {}, 'You answer a few 0–100 questions along the way, and once more a week later.')),
-      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time. Your answers are kept for the study, without your name.', 'muted'),
+    const steps = [
+      ['belief', 'Tell us what you believe', 'You tell us one thing you believe, and why.'],
+      ['sources', 'Read trusted sources', 'You read a short page of what trusted sources say about it.'],
+      ['chat', 'Chat with an AI', 'You talk with an AI that will try to change your mind. It may only say things it can back with a named source.'],
+      ['answer', 'Answer questions', 'You answer a few 0–100 questions along the way, and once more a week later.'],
+    ];
+    const cards = el('ol', { class: 'step-cards' }, ...steps.map(([art, title, text], i) => {
+      const pic = el('div', { class: 'step-art' });
+      pic.innerHTML = STEP_ART[art];
+      return el('li', { class: 'step-card ' + art }, el('span', { class: 'step-num' }, String(i + 1)), pic, el('h3', {}, title), p(text));
+    }));
+    show(el('div', { class: 'consent-head' },
+        el('span', { class: 'label' }, 'Before we start'), el('h1', {}, 'How this works'),
+        p('A quick overview of what you’ll do. It takes about 20 minutes.', 'lead')),
+      cards,
+      p('There are no right answers. If your view doesn’t change at all, that’s a perfectly good result. You can stop at any time. Your answers are kept for the study, without your name.', 'muted center'),
       btn);
   },
 
@@ -254,6 +264,7 @@ function draw(v) {
   if (v.links && !reversalAsked) { reversalAsked = true; journey('reversal', {}).catch(() => {}); }
   document.getElementById('who').hidden = false;
   document.getElementById('who-email').textContent = v.email;
+  document.body.classList.toggle('wide-step', v.stage === 'consent');
   (render[v.stage] || render.done)(v);
 }
 

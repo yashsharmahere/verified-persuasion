@@ -490,3 +490,33 @@ button.google svg { flex: none; }
 .msg .sources .source-link { display: inline-flex; align-items: center; font: 500 .8rem/1.2 var(--mono); padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); text-decoration: none; }
 .msg .sources .source-link::after { content: "↗"; margin-left: 6px; color: var(--muted); }
 .msg .sources .source-link:hover { border-color: var(--ink); color: var(--ink); }
+
+/* "How this works": four illustrated steps */
+.wide-step main, .wide-step .topbar { max-width: 1180px; }
+.consent-head { display: grid; gap: 8px; text-align: center; justify-items: center; }
+.consent-head .lead { color: var(--muted); font-size: 1.1rem; }
+.step-cards { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+.step-card { position: relative; border-radius: 16px; padding: 18px 20px 24px; display: grid; gap: 8px; align-content: start; border: 1px solid rgba(0, 0, 0, .04); }
+.step-card.belief { background: #eaefff; } .step-card.sources { background: #f2ecff; }
+.step-card.chat { background: #e8f6ec; } .step-card.answer { background: #fff1e3; }
+.step-card:not(:last-child)::after { content: "→"; position: absolute; right: -22px; top: 46%; font: 700 1.3rem/1 var(--sans); color: var(--ink); }
+.step-num { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 700 1.15rem/1 var(--sans); }
+.belief .step-num { background: #d6e0ff; color: #2442d8; } .sources .step-num { background: #e2d6ff; color: #6537d6; }
+.chat .step-num { background: #cdeed7; color: #1f7a43; } .answer .step-num { background: #ffdcbc; color: #c2470a; }
+.step-art svg { width: 100%; height: auto; display: block; }
+.step-card h3 { font-size: 1.2rem; margin-top: 4px; }
+.step-card p { color: var(--muted); font-size: .98rem; line-height: 1.5; }
+.muted.center { text-align: center; max-width: 640px; justify-self: center; }
+.wide-btn { width: 100%; max-width: 640px; justify-self: center; }
+@media (max-width: 960px) {
+  .step-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .step-card::after { display: none; }
+}
+@media (max-width: 560px) {
+  .step-cards { grid-template-columns: 1fr; }
+  .step-card { grid-template-columns: 92px 1fr; column-gap: 14px; padding: 14px; }
+  .step-card .step-num { grid-column: 1; width: 32px; height: 32px; font-size: 1rem; }
+  .step-card .step-art { grid-column: 1; grid-row: 2 / span 2; }
+  .step-card h3 { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 1.08rem; }
+  .step-card p { grid-column: 2; grid-row: 3; font-size: .92rem; }
+}
