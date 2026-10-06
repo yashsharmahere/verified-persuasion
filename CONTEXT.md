@@ -139,7 +139,7 @@ looked broken. A real-model demo, with a spend cap, can come back after
 
 `/start.html`: open to anyone with a Google account (Supabase Auth, Google
 provider). Before 2026-10-05 it was an emailed magic link with an allow-list
-(Dad only); a no-login version with a private link was built and replaced
+(Yash's father only, since dropped as participant); a no-login version with a private link was built and replaced
 the same day, because a lost link loses the day-7 answer. Logging in is what
 lets someone come back on any device on day 7. New beliefs are capped at
 `MAX_NEW_BELIEFS_PER_DAY` across everyone (default 20; new participants at
@@ -194,27 +194,48 @@ control statements looking unrelated is by design: they are decoys.
 
 ## The one thing blocking everything
 
-**No participant, no belief, no reason.**
+**The participant has not done the run yet.**
 
-The candidate is Yash's father, who believes something along the lines of
-*a person should eat everything regardless of age*. That has not been
-sharpened into a measurable statement, and the baseline interview has not
-happened.
+**Participant (changed 2026-10-05):** someone Yash knows, not family, who
+believes *if you eat breakfast before brushing your teeth, the germs in your
+mouth get into your stomach and cause stomach ache*. They take part on their
+own at /start.html with a Google account (add their Gmail to the Google Cloud
+test users first; the app is in Testing mode).
 
-Two problems with it, both known, neither resolved:
+Why this belief, and not the others considered the same day:
+- **Yash's father** ("I can eat the same at 60 as at 30") was dropped. It
+  split into a checkable part and a part the evidence partly supports (older
+  adults need *more* protein), and family raises demand characteristics: he
+  might move his number to please his son. A pilot run on it is kept in
+  `data/pilot-2026-10-05.md`.
+- **"Living in a joint family makes a person mentally, physically and
+  financially stable"**: three claims in one, "stable" is vague, the
+  evidence runs both ways, and it sits close to culture and identity, which
+  the brief excludes.
+- **"Using a pillow while sleeping causes a double chin"**: one clean claim,
+  but no trusted source found mentions pillows, so the system could only
+  argue from what does cause a double chin. Dermatology sources added for it
+  (aad.org, plasticsurgery.org, bad.org.uk) stay on the health list.
+- **The breakfast belief** has sources that speak to its mechanism. A search
+  on 2026-10-05 proposed six quotes, including NIH/PMC (eLife 2019): "Every
+  day, humans swallow around 1.5 liters of saliva, along with millions of
+  oral microbes. Scientists believe that more than 99% of these microbes die
+  as they pass through the acidic environment of the stomach"; NIH/PMC on
+  gastric acid killing bacteria within 15 minutes below pH 3; Cleveland
+  Clinic on lysozyme in saliva; Mayo Clinic on waiting an hour after acidic
+  food to brush.
 
-1. **It splits.** "I can eat the same things at 60 as at 30 without added
-   risk" is checkable and probably wrong. "Eat more for energy" is **not**
-   cleanly wrong — PROT-AGE and ESPEN both recommend older adults consume
-   *more* protein than younger adults (1.0–1.2 g/kg/day vs. 0.8). Contest
-   composition and portion, not quantity in general, or the system ends up
-   half-agreeing with him.
-
-2. **He is family.** Demand characteristics are the single most likely way
-   this study produces a fake result — he may move his number to please his
-   son without his reasoning changing at all. Mitigations are in
-   `docs/02-design-paper.md` §10. They reduce it; they do not remove it.
-   Whatever remains gets stated in the case study.
+Known limits, to state in the case study:
+- **Part of it is true.** Mouth microbes do reach the stomach and gut (the
+  same eLife paper finds more transmission than once thought). What is
+  unwarranted is the link from *eating before brushing* to *stomach ache*.
+  The system must never say germs don't reach the stomach; the gate blocks
+  that because no source says it.
+- **Its cost is mild.** Stomach aches may be blamed on the wrong cause, and
+  breakfast may be skipped when there's no time to brush. Ask in the intake;
+  the "why" questions capture it.
+- Not family, which removes the main demand-characteristic risk, but Yash
+  still knows them.
 
 The intake interview guide is `docs/03-intake-interview.md`.
 

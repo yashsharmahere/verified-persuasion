@@ -10,7 +10,7 @@ good one: the brief grades honesty about the result, not the result.
 
 ## 0. One paragraph
 
-**[RESULT]** One participant (my father, 60+) believed *[target statement,
+**[RESULT]** One participant (someone I know, not family) believed *[target statement,
 exact wording]*. Baseline [x]/100. After a fixed brochure of the same sources:
 [y]. After a conversation with a system that may only say what it can trace to
 a named, human-checked source: [z]. Seven days later: [w]. Of [n] claims the
@@ -340,7 +340,7 @@ Dated, in order. Each line is something learned, and where it is written up.
   the day-7 answer, a Google account doesn't. A daily cap on new beliefs
   bounds the cost of an open site. Nothing reminds people to come back on
   day 7 yet, so expect attrition. (§5)
-- **2026-10-05** First live run of automatic sourcing, on Dad's exact belief:
+- **2026-10-05** First live run of automatic sourcing, on the then-planned participant's (Yash's father's) belief:
   the search proposed quotes from the NIH's National Institute on Aging, the
   NHS and NCBI, and the download check kept fewer than two. Found by reading
   the code: the HTML-to-text step put a space where a link or bold text sat
@@ -364,3 +364,12 @@ Dated, in order. Each line is something learned, and where it is written up.
   from text nodes so model output is never parsed as HTML. Health sources
   widened to AIIMS, Mayo Clinic, Harvard, Johns Hopkins and Cleveland Clinic:
   in the pilot the participant said they trust "medical experts". (§5)
+- **2026-10-05** Participant changed from Yash's father to an acquaintance
+  who believes *eating breakfast before brushing your teeth sends mouth
+  germs into the stomach and causes stomach ache*. Chosen over a pillow /
+  double-chin belief because trusted sources speak to its mechanism (about
+  1.5 litres of saliva and millions of oral microbes swallowed daily, more
+  than 99% killed by stomach acid; NIH/PMC), where none mention pillows.
+  Joint-family belief rejected (bundled, vague, evidence both ways, close to
+  identity). Partly true: germs do reach the stomach; the unwarranted part
+  is the causal link to stomach ache. (§1, §3)
