@@ -95,3 +95,29 @@ Object.assign(STEP_ART, {
     <circle cx="196" cy="118" r="6" fill="#ff8a5b"/><circle cx="40" cy="120" r="5" fill="#a993f5"/>
     <path d="M60 80l-14-4M180 70l14-6M172 140l10 10M66 136l-10 10" stroke="#1b1b1b" stroke-width="2.5" stroke-linecap="round"/></svg>`,
 });
+
+// Generated illustrations, where we have them; the SVG drawings above are the fallback.
+const STEP_IMG = {
+  welcome: '/img/welcome.webp',
+  belief: '/img/belief.webp',
+  sources: '/img/sources.webp',
+  chat: '/img/chat.webp',
+  'step-belief': '/img/step-belief.webp',
+  'step-sources': '/img/step-sources.webp',
+  'step-chat': '/img/step-chat.webp',
+  'step-answer': '/img/step-answer.webp',
+};
+
+/** The picture for a screen: the generated image if there is one, else the drawing. */
+function artNode(key, fallback = key) {
+  if (STEP_IMG[key]) {
+    const img = document.createElement('img');
+    img.src = STEP_IMG[key];
+    img.alt = '';
+    img.decoding = 'async';
+    return img;
+  }
+  const span = document.createElement('span');
+  span.innerHTML = STEP_ART[fallback] || '';
+  return span.firstElementChild || span;
+}
