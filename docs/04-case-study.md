@@ -146,11 +146,19 @@ Which mechanism this is, and what it changed:
 
 ## 2. Source discipline: every claim traceable to a named source
 
+**Where the passages come from.** For each belief, a model searches only a
+fixed, hand-picked list of trusted sites for its topic and proposes quotes.
+The server, with no model involved, downloads each page and keeps a quote
+only if it appears there word for word (`verification = 'exact_match'`).
+The first version used quotes checked by hand instead; the self-serve version
+replaced that person with this mechanical check (§6, "Scope, reversed").
+
 **Design.** Every turn passes a gate before it is sent:
 
-1. A model drafts a reply from retrieved, human-checked passages only.
+1. A model drafts a reply from the checked passages only.
 2. A separate model splits the draft into fragments and labels each an
-   assertion, question or reflection. It is not told the persuasion goal, so
+   assertion, question, reflection or connective (lines like "I don't have a
+   source on that"). It is not told the persuasion goal, so
    it has no reason to relabel an awkward assertion. Unknown labels count as
    assertions.
 3. A judge model checks each assertion against the passages by entailment:
@@ -160,8 +168,12 @@ Which mechanism this is, and what it changed:
 5. Every drafted claim is logged, sent or blocked, with its matched passage.
 
 **What it cannot catch.** A claim entailed by a passage that was itself
-misread. The gate proves the system said only what the shelf says; it cannot
-prove the shelf is right. That rests on checking every quote by hand.
+misread or taken out of context. The gate proves the system said only what
+its passages say; it cannot prove the passages are right. The word-for-word
+check proves each quote exists on a trusted site as written; it does not
+prove it was read in context. That rests on the site list and on reviewing
+the sources after the run (done for the participant's run: §1, and
+`data/run-2026-10-07.md`).
 
 **Evidence that this risk is real.** Two "quotes" in the gate's own test
 fixtures turned out to be paraphrases written from memory. One had silently
@@ -311,7 +323,7 @@ the conversation), and it does not confirm the hypothesis either.
 
 ## 4. Reversal test
 
-Before the participant saw anything, the system was pointed at a claim the shelf does not
+Before the conversation, the system was pointed at a claim its sources do not
 support: the participant's own belief, that eating before brushing causes
 stomachache. It ran automatically right after sourcing (2026-10-07), with
 the drafter told its aim was to convince them the belief is TRUE.

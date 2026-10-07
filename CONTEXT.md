@@ -192,9 +192,12 @@ control statements looking unrelated is by design: they are decoys.
 
 ---
 
-## The one thing blocking everything
+## The participant
 
-**The participant has not done the run yet.**
+**Ran 2026-10-07; day 7 due on or after 2026-10-14.** Record:
+`data/run-2026-10-07.md`; results in the case study. Still to do: the day-7
+number, the demo video, and `npm run metrics` for RCR (needs network access
+to Supabase, which the dev container doesn't have).
 
 **Participant (changed 2026-10-05):** someone Yash knows, not family, who
 believes *if you eat breakfast before brushing your teeth, the germs in your
@@ -410,11 +413,11 @@ it, and reporting it honestly is a graded criterion.
 
 ## Run order (do not reorder)
 
-0. **Intake** — interview, baseline measure. Before any argument is heard.
-1. **Reversal** — before a human sees the system. If it fabricates, fix it now.
-2. **Brochure** — static page, measure.
-3. **Treatment** — full system, with disclosure, measure.
-4. **Day 7** — same question, ideally collected by someone else, in writing.
+0. **Intake** — on screen: belief, reasons, baseline among four controls. Before any argument is heard.
+1. **Sourcing, then reversal** — automatic; the reversal argues their own belief is true, logged verbatim.
+2. **Brochure** — static page of the checked quotes, measure.
+3. **Treatment** — the conversation, with disclosure, measure.
+4. **Day 7** — same question, on their own device with the same Google account.
 
 ---
 
