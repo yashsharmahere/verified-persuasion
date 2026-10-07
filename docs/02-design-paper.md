@@ -9,6 +9,35 @@
 > export. The four stages are described in prose below, and the same
 > structure is drawn in the repo README.
 
+> **What changed after this snapshot (as built and run, 2026-10-07).** This
+> paper is kept as written on 2026-10-04. The system that ran differs in
+> these ways; the case study (`docs/04-case-study.md`) describes it as built.
+>
+> 1. **Stage 1 is on screen, not an interview.** The participant answers the
+>    intake questions on the site (why, where from, whom they trust and
+>    distrust, what would change their mind). The drafter reads their words
+>    verbatim; they are not hand-coded.
+> 2. **Stage 2 is no longer a hand-built shelf.** Sources are found per belief:
+>    a model searches a fixed, hand-picked list of trusted sites for the
+>    belief's topic and proposes quotes, and the server keeps a quote only if
+>    it appears word for word on the downloaded page (`exact_match`). That
+>    replaces "a person opened the source" (`human_verified`) with "the server
+>    opened the source".
+> 3. **The gate** labels fragments assertion, question, reflection or
+>    connective; the judge makes one call per claim and must name the passage
+>    that entails it (naming none fails closed); two redrafts, then a fixed
+>    refusal. It is not deterministic (see the correction in §5).
+> 4. **The instrument** is the 0–100 scale on screen, with the target among
+>    four unrelated controls, at baseline, after the brochure, after the
+>    conversation and at day 7. The participant takes part alone, logged in
+>    with Google. Nothing is on paper.
+> 5. **The participant** is an acquaintance, not family (§12 risk 1 avoided),
+>    and the belief is that eating breakfast before brushing sends mouth germs
+>    to the stomach and causes stomach ache. The reversal run is aimed at
+>    that belief and runs automatically.
+> 6. **RCR** is computed after a run by `npm run metrics`; it had not been run
+>    for the participant at the time of writing.
+
 ---
 
 ## Abstract

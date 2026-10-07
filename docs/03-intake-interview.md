@@ -1,3 +1,11 @@
+> **Superseded (2026-10-05).** This was the guide for a 30-minute paper
+> interview with the first planned participant (Yash's father). The study
+> moved to a self-serve site, where the intake is a short set of questions on
+> screen (why they believe it, where it came from, whom they trust and don't,
+> what would change their mind, and whether a doctor or expert told them
+> anything), and the participant changed. Kept for the record of how the
+> intake was designed.
+
 # Run 0 — Intake interview
 
 One sitting, about 30 minutes, before he hears any argument. Derived from
