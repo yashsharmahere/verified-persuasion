@@ -430,10 +430,10 @@ it, and reporting it honestly is a graded criterion.
 
 ## Deliverables (submission template)
 
-1. Live project link — https://canyoubeconvinced.vercel.app (explainer live; real run pending)
+1. Live project link — https://canyoubeconvinced.vercel.app
 2. GitHub repo — this
-3. Demo video — not started
-4. Case study — not started
+3. Demo video — script ready (`docs/05-demo-video.md`), not recorded
+4. Case study — `docs/04-case-study.md`, filled from the 2026-10-07 run; day 7 pending
 
 ---
 
