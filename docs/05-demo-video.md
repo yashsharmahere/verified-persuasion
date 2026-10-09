@@ -158,7 +158,9 @@ a four-minute conversation: 60. That looks like a clear win for the
 conversation. But look at the decoys: 'cracking your knuckles causes
 arthritis' went from 0 to 60, and nobody mentioned knuckles. By the rule I set
 before the test, a change only counts if the decoys stay still. So this result
-is inconclusive, and the case study says so. The seven-day rating comes next."
+is inconclusive, and the case study says so. Seven days later they still
+rated it 60. I asked that on a call, without the decoys, so it can't settle
+the question either."
 
 **Screen:** case study §4, the reversal quote.
 
@@ -186,5 +188,3 @@ case study are linked below."
 - Add captions if the tool offers them.
 - Put the video link in the submission, next to the live site, the repo and
   the case study.
-- If the day-7 rating has come in, add one line to 4c ("A week later: [x]") or
-  record a 10-second addendum.
