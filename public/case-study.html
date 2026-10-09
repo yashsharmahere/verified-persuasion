@@ -92,6 +92,8 @@ section.alt { background: var(--surface); }
 .player { border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; background: #151515; box-shadow: 0 6px 0 var(--line-strong); }
 .player video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #151515; }
 .video-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 14px; font: 600 14px/1.4 var(--mono); color: var(--muted); }
+.byline { font: 600 15px/1.4 var(--mono); color: var(--muted); margin: -6px 0 18px; }
+.byline a { color: var(--ink); }
 /* memes */
 .meme { background: #fff; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); transform: rotate(-.6deg); }
 .meme.r { transform: rotate(.7deg); }
@@ -252,6 +254,7 @@ footer.site .wrap { display: flex; flex-wrap: wrap; justify-content: space-betwe
     <div>
       <span class="label rv">Case study · 100xEngineers C7 capstone</span>
       <h1 class="rv d1">Can an AI change a mind using only what it can <span style="color:var(--accent)">prove</span>?</h1>
+      <p class="byline rv d1">By <a href="https://www.linkedin.com/in/yashcreatz/" target="_blank" rel="noopener">Yash Sharma</a> · <a href="https://www.linkedin.com/in/yashcreatz/" target="_blank" rel="noopener">LinkedIn ↗</a></p>
       <p class="lede rv d2">The most persuasive AI models also made the most things up. So I built one that may only say what it can trace to a named source, checked word for word, and pointed it at one real person's belief.</p>
       <div class="chips rv d3">
         <span class="chip">Belief <b>100 → 100 → 60</b></span>
@@ -599,7 +602,7 @@ footer.site .wrap { display: flex; flex-wrap: wrap; justify-content: space-betwe
   </div>
 </section>
 
-<footer class="site"><div class="wrap"><span>Verified Persuasion · a 100xEngineers C7 capstone by Yash Sharma</span><span><a href="/privacy.html">Privacy</a> · <a href="https://github.com/yashsharmahere/verified-persuasion">Code</a></span></div></footer>
+<footer class="site"><div class="wrap"><span>Verified Persuasion · a 100xEngineers C7 capstone · made by <a href="https://www.linkedin.com/in/yashcreatz/" target="_blank" rel="noopener">Yash Sharma</a></span><span><a href="https://www.linkedin.com/in/yashcreatz/" target="_blank" rel="noopener">LinkedIn ↗</a> · <a href="/privacy.html">Privacy</a> · <a href="https://github.com/yashsharmahere/verified-persuasion">Code</a></span></div></footer>
 
 <script>
 (() => {
