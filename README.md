@@ -5,8 +5,8 @@ A system that argues someone out of a wrong belief, using **only claims it can t
 100xEngineers C7 Capstone · Module 3
 
 - **Live:** https://canyoubeconvinced.vercel.app (participants start at `/start.html`)
-- **Case study:** [`docs/04-case-study.md`](docs/04-case-study.md), with the participant's run in [`data/run-2026-10-07.md`](data/run-2026-10-07.md)
-- **Demo video script:** [`docs/05-demo-video.md`](docs/05-demo-video.md)
+- **Case study:** https://canyoubeconvinced.vercel.app/case-study.html (visual version, with the video); full write-up in [`docs/04-case-study.md`](docs/04-case-study.md), with the participant's run in [`data/run-2026-10-07.md`](data/run-2026-10-07.md)
+- **Demo video:** https://canyoubeconvinced.vercel.app/video/explainer.mp4 (6 minutes, including a live run)
 - **Working notes and decisions:** [`CONTEXT.md`](CONTEXT.md)
 
 ---
