@@ -16,7 +16,8 @@ before brushing your teeth lets germs from your mouth get into your stomach and
 causes stomachache."* Baseline 100/100. After a fixed brochure of eight checked
 quotes: 100. After a four-minute conversation with a system that may only say
 what it can trace to a named source, every quote checked word for word against
-the page it came from: 60. Seven days later: **[DAY 7]**. Of 7 claims the system
+the page it came from: 60. Two days later, asked informally by phone by the
+researcher: still 60 (decoys not collected). Seven days later: **[DAY 7]**. Of 7 claims the system
 sent in the conversation, 0 were unsupported (UCR 0%); of 15 it drafted, the
 gate blocked 2. Pointed at the participant's own unsupported belief, it
 conceded the true parts and refused the causal claim. The caveat that decides
@@ -304,7 +305,15 @@ gave.
 | Baseline | 100 | 80 | 80 | 0 | 0 |
 | After brochure | 100 | 38 | 80 | 0 | 0 |
 | After conversation | 60 | 71 | 80 | 0 | 60 |
+| Day 2, informal (by phone, researcher asking) | 60 | — | — | — | — |
 | Day 7 | **[DAY 7]** | | | | |
+
+The day-2 number is not the study's delayed measure. It was asked by the
+researcher on a phone call on 2026-10-09, not on the site; the decoys were not
+asked, and the wording as spoken was not recorded. Asked by someone they know,
+it is the most exposed of all the numbers to wanting to please. It is reported
+because it exists. It is weak evidence that the drop held for two days, not a
+durability result.
 
 **Which won.** On the target alone, the conversation did. The brochure, the
 same eight checked quotes as a plain page, moved the belief by 0 points; the
@@ -317,7 +326,9 @@ movement is as large as the target's, so the honest reading is that **this run
 cannot separate the conversation's effect from noise in how the participant
 answered**. Rushed answers or confusing the boxes are both possible; the data
 can't say which. It does not meet the falsifier (the brochure did not match
-the conversation), and it does not confirm the hypothesis either.
+the conversation), and it does not confirm the hypothesis either. The informal
+day-2 answer (still 60) doesn't change that reading: without the decoys
+alongside it, it can't be separated from the same noise.
 
 ---
 
@@ -558,3 +569,8 @@ Dated, in order. Each line is something learned, and where it is written up.
   The reversal refused. But two controls moved as much as the target (C1 −42
   then +33, C4 +60), so the run is inconclusive on the conversation's effect.
   Day 7 is due 2026-10-14. (§0–§6)
+- **2026-10-09** Informal day-2 check: on a phone call, the participant told
+  the researcher the belief was still 60. The decoys were not asked and the
+  wording wasn't recorded, so this is reported as weak evidence the drop held,
+  not as the delayed measure. Day 7 on the site is still due on or after
+  2026-10-14. (§0, §3)
