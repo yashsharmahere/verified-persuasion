@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to data/intake.json (gitignored: it holds a real person's words). Fill from the Run 0 interview, docs/03-intake-interview.md.",
+  "_comment": "Copy to data/intake.json (gitignored: it holds a real person's words). Legacy format for scripts/intake-load.ts; the self-serve site now collects the intake on screen.",
   "participant": {
     "label": "P1",
     "consented_at": "2026-10-05T10:00:00+05:30",
