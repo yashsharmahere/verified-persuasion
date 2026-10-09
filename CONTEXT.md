@@ -194,7 +194,7 @@ control statements looking unrelated is by design: they are decoys.
 
 ## The participant
 
-**Ran 2026-10-07; day 7 due on or after 2026-10-14.** Record:
+**Ran 2026-10-07; day 7 due on or after 2026-10-14.** Informal day-2 check by phone (2026-10-09): target still 60, no decoys, so not the delayed measure. Record:
 `data/run-2026-10-07.md`; results in the case study. Still to do: the day-7
 number, the demo video, and `npm run metrics` for RCR (needs network access
 to Supabase, which the dev container doesn't have).
