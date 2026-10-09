@@ -66,7 +66,7 @@ section.alt { background: var(--surface); }
 .tag.hot { color: var(--hot-deep); background: #ffeadf; }
 
 /* hero */
-.hero { padding: 72px 0 80px; }
+.hero { padding: 72px 0 56px; border-bottom: 0; }
 .hero-grid { display: grid; grid-template-columns: 1.25fr .75fr; gap: 48px; align-items: center; }
 .hero-art { position: relative; }
 .hero-art img { width: 100%; animation: bob 5s ease-in-out infinite; }
@@ -88,6 +88,10 @@ section.alt { background: var(--surface); }
 .stat .n { font: 700 clamp(46px, 6vw, 72px)/1 var(--sans); letter-spacing: -.03em; }
 .stat .k { font: 600 13px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-top: 10px; }
 
+.video-sec { padding: 0 0 88px; border-bottom: 1px solid var(--line); }
+.player { border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; background: #151515; box-shadow: 0 6px 0 var(--line-strong); }
+.player video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #151515; }
+.video-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 14px; font: 600 14px/1.4 var(--mono); color: var(--muted); }
 /* memes */
 .meme { background: #fff; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); transform: rotate(-.6deg); }
 .meme.r { transform: rotate(.7deg); }
@@ -258,10 +262,22 @@ footer.site .wrap { display: flex; flex-wrap: wrap; justify-content: space-betwe
       <div class="verdict rv d4"><span class="dot"></span>Verdict: inconclusive. The decoys moved too. Here's the whole story.</div>
       <div class="cta-row rv d4">
         <a class="btn" href="/">Try the live site</a>
+        <a class="btn ghost" href="#video">Watch the 6-min video</a>
         <a class="btn ghost" href="https://github.com/yashsharmahere/verified-persuasion">Code on GitHub</a>
       </div>
     </div>
     <div class="hero-art rv d2"><img src="/img/chat.webp" alt="A friendly robot with a speech bubble"></div>
+  </div>
+</section>
+
+<!-- VIDEO -->
+<section class="video-sec" id="video">
+  <div class="wrap">
+    <div class="player rv"><video controls preload="metadata" playsinline poster="/video/explainer-poster.jpg">
+      <source src="/video/explainer.mp4" type="video/mp4">
+      Your browser can't play this video. <a href="/video/explainer.mp4">Download it</a>.
+    </video></div>
+    <div class="video-meta rv d1"><span>▶ The 6-minute walkthrough: the problem, a live run on the real site, how it's built, and the results.</span><span>Narrated with a synthetic voice · captions on screen</span></div>
   </div>
 </section>
 
