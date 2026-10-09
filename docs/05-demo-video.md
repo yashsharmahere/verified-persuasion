@@ -158,9 +158,9 @@ a four-minute conversation: 60. That looks like a clear win for the
 conversation. But look at the decoys: 'cracking your knuckles causes
 arthritis' went from 0 to 60, and nobody mentioned knuckles. By the rule I set
 before the test, a change only counts if the decoys stay still. So this result
-is inconclusive, and the case study says so. Seven days later they still
-rated it 60. I asked that on a call, without the decoys, so it can't settle
-the question either."
+is inconclusive, and the case study says so. Two days later, on a call, they
+still said 60. The seven-day rating fell after the deadline, so whether it
+lasts is untested."
 
 **Screen:** case study §4, the reversal quote.
 

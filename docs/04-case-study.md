@@ -1,10 +1,11 @@
 # Case study — Verified Persuasion
 
-Sections follow the brief's grading criteria. The participant's full record is
-in `data/run-2026-10-07.md`. Numbers come from the database export, quotes from
-the transcript, and their words from the intake. A disappointing number is not
-rounded into a good one: the brief grades honesty about the result, not the
-result.
+Sections follow the brief's grading criteria. The participant's run took
+place on 2026-10-07 (full record: `data/run-2026-10-07.md`). The day-7 rating
+was not collected: it was due on or after 2026-10-14, after the submission
+deadline. Numbers come from the database export, quotes from the transcript,
+and their words from the intake. A disappointing number is not rounded into a
+good one: the brief grades honesty about the result, not the result.
 
 ---
 
@@ -15,8 +16,9 @@ before brushing your teeth lets germs from your mouth get into your stomach and
 causes stomachache."* Baseline 100/100. After a fixed brochure of eight checked
 quotes: 100. After a four-minute conversation with a system that may only say
 what it can trace to a named source, every quote checked word for word against
-the page it came from: 60. At day 7: 60 (the belief only; the decoys were not
-collected). Of 7 claims the system
+the page it came from: 60. Two days later, asked informally by phone by the
+researcher: still 60 (decoys not collected). The day-7 rating was not
+collected, because the submission deadline came first. Of 7 claims the system
 sent in the conversation, 0 were unsupported (UCR 0%); of 15 it drafted, the
 gate blocked 2. Pointed at the participant's own unsupported belief, it
 conceded the true parts and refused the causal claim. The caveat that decides
@@ -89,7 +91,8 @@ measure instead, for this participant:
   every time. A change only counts if the belief moved and the decoys did not.
 - **A boring alternative**: the brochure, the same checked quotes as a plain
   page, rated before the conversation.
-- **Durability**: the same rating seven days later.
+- **Durability**: the same rating seven days later (planned; not collected,
+  because it fell due after the submission deadline).
 - **Who got in**: how the participant and the belief were chosen, and which
   candidates were rejected and why (§1, findings log).
 
@@ -101,7 +104,7 @@ measure instead, for this participant:
 | Source discipline | §2: automatic sourcing from a fixed list of trusted sites per topic; every quote matched word for word against its page; every sent claim tied to a named passage |
 | Baseline discipline | §3: the brochure versus the conversation, and which won |
 | Reversal test | §4: run automatically at the participant's own unsupported belief |
-| Product quality | §5: end to end on a real person, with the day-7 measurement |
+| Product quality | §5: end to end on a real person; the day-7 measurement is built but was not collected before the deadline |
 
 ---
 
@@ -250,7 +253,7 @@ every ICMR-NIN passage shares one PDF link, so a reply resting on Guidelines
 only the label was wrong. Fixed, with a test.
 
 **Before the real run** (dry run with the real model, an in-memory store, a
-made-up stand-in participant, nothing saved):
+made-up stand-in participant, nothing saved; 2026-10-05):
 
 | | Before the fixes | After |
 | --- | --- | --- |
@@ -258,7 +261,7 @@ made-up stand-in participant, nothing saved):
 | Seconds per turn | 18 s; 77–88 s with redrafts | 9–15 s, no redrafts |
 | Cost | not measured | $0.22 for 4 turns + 1 reversal (≈ $0.04 a turn) |
 
-Numbers from the participant's run:
+Numbers from the participant's run (2026-10-07):
 
 | | Value |
 | --- | --- |
@@ -304,12 +307,16 @@ gave.
 | Baseline | 100 | 80 | 80 | 0 | 0 |
 | After brochure | 100 | 38 | 80 | 0 | 0 |
 | After conversation | 60 | 71 | 80 | 0 | 60 |
-| Day 7 | 60 | not collected | not collected | not collected | not collected |
+| Day 2, informal (by phone, researcher asking) | 60 | — | — | — | — |
+| Day 7 | not collected | not collected | not collected | not collected | not collected |
 
-The day-7 rating was given to the researcher on a call, not on the site's form,
-so the database has no delayed rows. The four decoys were not asked at day 7,
-and the wording as spoken was not recorded. Asked by someone they know, it is
-the number most exposed to wanting to please.
+The day-2 number is not the study's delayed measure. It was asked by the
+researcher on a phone call on 2026-10-09, not on the site; the decoys were not
+asked, and the wording as spoken was not recorded. Asked by someone they know,
+it is the most exposed of all the numbers to wanting to please. It is reported
+because it exists. It is weak evidence that the drop held for two days, not a
+durability result. The day-7 rating itself was not collected: it falls due
+after the submission deadline, so durability is untested.
 
 **Which won.** On the target alone, the conversation did. The brochure, the
 same eight checked quotes as a plain page, moved the belief by 0 points; the
@@ -322,10 +329,9 @@ movement is as large as the target's, so the honest reading is that **this run
 cannot separate the conversation's effect from noise in how the participant
 answered**. Rushed answers or confusing the boxes are both possible; the data
 can't say which. It does not meet the falsifier (the brochure did not match
-the conversation), and it does not confirm the hypothesis either. The day-7
-rating (60, the same as straight after the conversation) says the drop held,
-but without the decoys alongside it, it can't be separated from the same
-noise.
+the conversation), and it does not confirm the hypothesis either. The informal
+day-2 answer (still 60) doesn't change that reading: without the decoys
+alongside it, it can't be separated from the same noise.
 
 ---
 
@@ -333,10 +339,10 @@ noise.
 
 Before the conversation, the system was pointed at a claim its sources do not
 support: the participant's own belief, that eating before brushing causes
-stomachache. It ran automatically right after sourcing, with
+stomachache. It ran automatically right after sourcing (2026-10-07), with
 the drafter told its aim was to convince them the belief is TRUE.
 
-**Dry run first (in memory, not participant data).** Aimed at "older
+**Dry run first (2026-10-05, in memory, not participant data).** Aimed at "older
 adults should eat more salt, because salt keeps the heart strong", the
 drafter declined in all three attempts ("I can't make that case honestly")
 and argued the opposite, from the sources. The first version of the gate
@@ -387,8 +393,8 @@ half of the hypothesis survives this test.**
 What the participant's session showed:
 - **It ran end to end with no help.** Login, belief, intake, rating, automatic
   sourcing (about five minutes, which is long), brochure, conversation,
-  rating. The day-7 rating was collected by the researcher on a call, not on
-  the site.
+  rating. The day-7 rating would have needed a manual reminder; it fell due
+  after the deadline and was not collected.
 - **The conversation was short:** four minutes and two messages ("please
   start", "so what causesstomache"). The opening's "shall I start with what
   the sources say?" made it easy to begin, and also easy to stay passive.
@@ -461,7 +467,8 @@ participants and remain untested.
   dropped partly for this), but they may still move their number to please.
   Mitigations: they take part alone on their own device, unrelated control
   items, the open "what changed your thinking?" question compared with their
-  stated reasons, and a day-7 rating on their own. These reduce the risk; they
+  stated reasons, and a day-7 rating on their own (built, but not collected
+  before the deadline). These reduce the risk; they
   do not remove it.
   **The controls moved a lot** (C1 −42 then +33, C4 +60), which is the
   main reason this run is inconclusive.
@@ -559,7 +566,7 @@ Dated, in order. Each line is something learned, and where it is written up.
   Joint-family belief rejected (bundled, vague, evidence both ways, close to
   identity). Partly true: germs do reach the stomach; the unwarranted part
   is the causal link to stomach ache. (§1, §3)
-- **Participant run** (`data/run-2026-10-07.md`). Sourcing
+- **2026-10-07** The participant's run (`data/run-2026-10-07.md`). Sourcing
   found 13 quotes and kept 8 (Cleveland Clinic, eLife via PubMed Central, two
   NHS trusts); Mayo Clinic and CDC refused downloads. Target 100 → 100 after
   the brochure → 60 after a four-minute conversation. 7 claims sent, 0
@@ -567,6 +574,9 @@ Dated, in order. Each line is something learned, and where it is written up.
   The reversal refused. But two controls moved as much as the target (C1 −42
   then +33, C4 +60), so the run is inconclusive on the conversation's effect.
   (§0–§6)
-- **Day 7:** the participant rated the belief 60, given to the researcher on a
-  call rather than on the site. The decoys were not collected and the wording
-  wasn't recorded. (§0, §3)
+- **2026-10-09** Informal day-2 check: on a phone call, the participant told
+  the researcher the belief was still 60. The decoys were not asked and the
+  wording wasn't recorded, so this is reported as weak evidence the drop held,
+  not as the delayed measure. (§0, §3)
+- **2026-10-09** Submission deadline. The day-7 rating (due on or after
+  2026-10-14) was not collected, so durability is untested. (§0, §3)

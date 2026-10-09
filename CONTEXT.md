@@ -194,10 +194,10 @@ control statements looking unrelated is by design: they are decoys.
 
 ## The participant
 
-**Run complete.** Day 7: target 60, given to the researcher on a call (not on the site, so not in the database); decoys not collected. Record:
-`data/run-2026-10-07.md`; results in the case study. Still to do: the demo video and
-`npm run metrics` for RCR (needs network access to Supabase, which the dev
-container doesn't have).
+**Ran 2026-10-07.** Informal day-2 check by phone (2026-10-09): target still 60, no decoys, so not the delayed measure. Day 7 (due on or after 2026-10-14) was not collected: the submission deadline came first. Record:
+`data/run-2026-10-07.md`; results in the case study. Still to do: the demo
+video, and `npm run metrics` for RCR (needs network access
+to Supabase, which the dev container doesn't have).
 
 **Participant (changed 2026-10-05):** someone Yash knows, not family, who
 believes *if you eat breakfast before brushing your teeth, the germs in your
@@ -436,7 +436,7 @@ it, and reporting it honestly is a graded criterion.
 1. Live project link — https://canyoubeconvinced.vercel.app
 2. GitHub repo — this
 3. Demo video — script ready (`docs/05-demo-video.md`), not recorded
-4. Case study — `docs/04-case-study.md`, filled from the participant's run, including day 7
+4. Case study — `docs/04-case-study.md`, filled from the 2026-10-07 run; day 7 not collected (deadline)
 
 ---
 
