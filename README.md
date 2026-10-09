@@ -91,7 +91,7 @@ npm run gate:judge       # is the judge strict enough? calls a real model
 ### Running a participant through it (self-serve)
 
 1. Apply the migrations in `supabase/migrations/` and set the env vars (`ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, optionally `MAX_NEW_BELIEFS_PER_DAY`).
-2. Turn on Google sign-in in Supabase Auth, with the site's `/start.html` as a redirect URL.
+2. Turn on Google sign-in in Supabase Auth, with the site's `/start.html` as a redirect URL. In Google Cloud, set the OAuth app's publishing status to **In production**: in Testing mode only listed test users can sign in.
 3. Deploy (Vercel; `vercel.json` sets the function time limits).
 4. Send the participant to `/start.html`. They log in with Google, agree, state the belief, answer the intake, rate it among four controls; the server finds and checks sources, builds the brochure and runs the reversal test; they read the brochure, rate, chat, rate; seven days later they rate once more.
 5. Read the results from the database (`assertions`, `measures`, `beliefs.sourcing_log`), or `npm run metrics -- --belief <id>`.
