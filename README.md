@@ -2,7 +2,7 @@
 
 A system that argues someone out of a wrong belief, using **only claims it can trace to a named source**. If it can't source a claim, it doesn't say it.
 
-100xEngineers C7 Capstone · Module 3
+100xEngineers C7 Capstone · Module 3 · Made by [Yash Sharma](https://www.linkedin.com/in/yashcreatz/)
 
 - **Live:** https://canyoubeconvinced.vercel.app (participants start at `/start.html`)
 - **Case study:** https://canyoubeconvinced.vercel.app/case-study.html (visual version, with the video); full write-up in [`docs/04-case-study.md`](docs/04-case-study.md), with the participant's run in [`data/run-2026-10-07.md`](data/run-2026-10-07.md)
