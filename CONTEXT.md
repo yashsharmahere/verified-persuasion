@@ -239,7 +239,8 @@ Known limits, to state in the case study:
 - Not family, which removes the main demand-characteristic risk, but Yash
   still knows them.
 
-The intake interview guide is `docs/03-intake-interview.md`.
+The intake happens on screen in the self-serve journey (`QUESTIONS` in
+`src/journey/handler.ts`); the earlier spoken-interview guide was removed.
 
 ---
 
